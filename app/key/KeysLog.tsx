@@ -71,66 +71,66 @@ export default function KeysLog({ onBackToKeys }: KeysLogProps) {
       </div>
 
       {/* Logs Table */}
-     <div className="overflow-x-auto overflow-y-auto flex-grow rounded-xl max-h-[70vh]">
-  <table className="w-full table-fixed border-collapse">
-    <colgroup>
-      <col className="w-[15%]" />
-      <col className="w-[15%]" />
-      <col className="w-[20%]" />
-      <col className="w-[15%]" />
-      <col className="w-[20%]" />
-      <col className="w-[15%]" />
-    </colgroup>
+      <div className="overflow-x-auto overflow-y-auto flex-grow rounded-xl max-h-[70vh]">
+        <table className="w-full table-fixed border-collapse">
+          <colgroup>
+            <col className="w-[15%]" />
+            <col className="w-[15%]" />
+            <col className="w-[20%]" />
+            <col className="w-[15%]" />
+            <col className="w-[20%]" />
+            <col className="w-[15%]" />
+          </colgroup>
 
-    <thead className="sticky top-0 z-10 bg-[#0441B1] text-white text-3xl shadow-md">
-      <tr>
-        <th className="p-7 text-left">Room</th>
-        <th className="p-7 text-left">Date</th>
-        <th className="p-7 text-left">Borrowed By</th>
-        <th className="p-7 text-left">Time Borrowed</th>
-        <th className="p-7 text-left">Returned By</th>
-        <th className="p-7 text-left">Time Returned</th>
-      </tr>
-    </thead>
+          <thead className="sticky top-0 z-10 bg-[#0441B1] text-white text-3xl shadow-md">
+            <tr>
+              <th className="p-7 text-left">Room</th>
+              <th className="p-7 text-left">Date</th>
+              <th className="p-7 text-left">Borrowed By</th>
+              <th className="p-7 text-left">Time Borrowed</th>
+              <th className="p-7 text-left">Returned By</th>
+              <th className="p-7 text-left">Time Returned</th>
+            </tr>
+          </thead>
 
-    <tbody>
-      {filteredLogs.length > 0 ? (
-        filteredLogs.map((log: any, index: number) => (
-          <tr
-            key={index}
-            className="border-b text-2xl hover:bg-gray-50 transition"
-          >
-            <td className="p-8 font-semibold truncate">{log.room}</td>
-            <td className="p-8 text-left">
-              {log.date ? formatDate(log.date) : "----"}
-            </td>
-            <td className="p-8 text-left">
-              {log.borrowed_by_name || "----"}
-            </td>
-            <td className="p-8 text-left">
-              {log.time_borrowed ? formatTime(log.time_borrowed) : "----"}
-            </td>
-            <td className="p-8 text-left">
-              {log.returned_by_name || "----"}
-            </td>
-            <td className="p-8 text-left">
-              {log.time_returned ? formatTime(log.time_returned) : "----"}
-            </td>
-          </tr>
-        ))
-      ) : (
-        <tr>
-          <td
-            colSpan={6}
-            className="py-8 text-gray-500 text-center text-xl"
-          >
-            No logs found.
-          </td>
-        </tr>
-      )}
-    </tbody>
-  </table>
-</div>
+          <tbody>
+            {filteredLogs.length > 0 ? (
+              filteredLogs.map((log: any, index: number) => (
+                <tr
+                  key={index}
+                  className="border-b text-2xl hover:bg-gray-50 transition"
+                >
+                  <td className="p-8 font-semibold truncate">{log.room}</td>
+                  <td className="p-8 text-left">
+                    {log.date ? formatDate(log.date) : "----"}
+                  </td>
+                  <td className="p-8 text-left">
+                    {log.borrowed_by_name || "----"}
+                  </td>
+                  <td className="p-8 text-left">
+                    {log.time_borrowed ? formatTime(log.time_borrowed) : "----"}
+                  </td>
+                  <td className="p-8 text-left">
+                    {log.returned_by_name || "----"}
+                  </td>
+                  <td className="p-8 text-left">
+                    {log.time_returned ? formatTime(log.time_returned) : "----"}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="py-8 text-gray-500 text-center text-xl"
+                >
+                  No logs found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
     </>
   );

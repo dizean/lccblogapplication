@@ -1,6 +1,64 @@
+"use client";
+
 import Link from "next/link";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 export default function Home() {
+  const API = process.env.NEXT_PUBLIC_API_URL;
+
+  // 📦 Generic Export Function
+  async function downloadExcel(type: "today" | "all") {
+    // ✅ Choose which API set to use
+    const apis =
+      type === "today"
+        ? [
+            `${API}/employeesLog/todayLogs`,
+            `${API}/keysLog/todayLogs`,
+            `${API}/visitors/todayLogs`,
+          ]
+        : [
+            `${API}/employeesLog/allLogs`,
+            `${API}/keysLog/allLogs`,
+            `${API}/visitors/allLogs`,
+          ];
+
+    const sheetNames = ["Employees", "Keys", "Visitors"];
+
+    try {
+      // Fetch all API data concurrently
+      const results = await Promise.all(
+        apis.map(async (url) => {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`Failed to fetch: ${url}`);
+          return await res.json();
+        })
+      );
+
+      // Create a new workbook
+      const workbook = XLSX.utils.book_new();
+
+      // Add each dataset to its own sheet
+      results.forEach((data, index) => {
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        XLSX.utils.book_append_sheet(workbook, worksheet, sheetNames[index]);
+      });
+
+      // Generate and download XLSX
+      const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+      const fileName =
+        type === "today" ? "LCCB_Today_Logs.xlsx" : "LCCB_All_Logs.xlsx";
+
+      saveAs(
+        new Blob([wbout], { type: "application/octet-stream" }),
+        fileName
+      );
+    } catch (error) {
+      console.error("❌ Error exporting data:", error);
+      alert("Failed to download Excel. Please try again.");
+    }
+  }
+
   return (
     <div
       className="flex min-h-screen flex-col bg-cover bg-center"
@@ -59,9 +117,25 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 🔸 Footer (optional for polish) */}
-      <footer className="bg-white py-6 text-center text-gray-600 text-lg font-medium border-t">
-        © {new Date().getFullYear()} La Consolacion College Bacolod — All Rights Reserved
+      {/* 🔸 Footer + Export Buttons */}
+      <footer className="bg-white py-8 text-center text-gray-600 text-lg font-medium border-t flex flex-col items-center gap-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          <button
+            onClick={() => downloadExcel("today")}
+            className="bg-[#0441B1] text-white px-8 py-4 rounded-xl text-xl font-bold hover:bg-blue-900 transition-all shadow-lg"
+          >
+            📅 Download Today’s Logs
+          </button>
+          <button
+            onClick={() => downloadExcel("all")}
+            className="bg-green-600 text-white px-8 py-4 rounded-xl text-xl font-bold hover:bg-green-700 transition-all shadow-lg"
+          >
+            📊 Download All Logs
+          </button>
+        </div>
+        <p>
+          © {new Date().getFullYear()} La Consolacion College Bacolod — All Rights Reserved
+        </p>
       </footer>
     </div>
   );

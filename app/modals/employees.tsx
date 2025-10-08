@@ -16,7 +16,7 @@ const EmployeesList: React.FC<EmployeesListProps> = ({ onSelect, onClose }) => {
   );
 
   return (
-    <div className="bg-white shadow-xl rounded-2xl p-6 md:p-8 w-full max-w-7xl relative">
+    <div className="bg-white shadow-xl rounded-2xl p-6 md:p-8 w-full max-w-8xl relative">
       {onClose && (
         <button
           onClick={onClose}
@@ -25,7 +25,7 @@ const EmployeesList: React.FC<EmployeesListProps> = ({ onSelect, onClose }) => {
           ✕
         </button>
       )}
-      <h2 className="text-2xl font-extrabold text-[#0441B1] mb-4 text-center">
+      <h2 className="text-5xl font-extrabold text-[#0441B1] mb-4 text-center">
         Select Employee
       </h2>
       <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
@@ -37,10 +37,15 @@ const EmployeesList: React.FC<EmployeesListProps> = ({ onSelect, onClose }) => {
           className="flex-1 w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0441B1] text-lg"
         />
       </div>
-      <div className="max-h-[500px] overflow-y-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-[#0441B1] text-white text-lg">
+      <div className="overflow-x-auto overflow-y-auto flex-grow rounded-xl max-h-[70vh]">
+        <table className="w-full table-fixed border-collapse">
+          <colgroup>
+            <col className="w-[35%]" />
+            <col className="w-[35%]" />
+            <col className="w-[30%]" />
+          </colgroup>
+          <thead className="sticky top-0 z-10 bg-[#0441B1] text-white text-3xl shadow-md">
+            <tr className="bg-[#0441B1] text-white text-2xl">
               <th className="p-4 text-left">Name</th>
               <th className="p-4 text-left">Position</th>
               <th className="p-4 text-center">Action</th>
@@ -53,12 +58,12 @@ const EmployeesList: React.FC<EmployeesListProps> = ({ onSelect, onClose }) => {
                   key={emp.id}
                   className="border-b hover:bg-gray-50 transition"
                 >
-                  <td className="p-4 text-lg font-semibold">{emp.name}</td>
-                  <td className="p-4 text-lg">{emp.type}</td>
+                  <td className="p-4 text-xl font-semibold">{emp.name}</td>
+                  <td className="p-4 text-xl">{emp.department}<br/>{emp.classification}<br/>{emp.status}</td>
                   <td className="p-4 text-center">
                     <button
                       onClick={() => onSelect(emp.id)}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                      className="text-xl px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
                     >
                       Select
                     </button>
