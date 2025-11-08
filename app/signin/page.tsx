@@ -1,12 +1,33 @@
+"use client";
+
 import Link from "next/link";
+import { useCallback } from "react";
 
 export default function SignIn() {
+  const adminUser = process.env.NEXT_PUBLIC_ADMIN_USER;
+  const adminPass = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+
+  const signIn = useCallback((e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const form = e.currentTarget;
+    const username = (form.elements.namedItem("username") as HTMLInputElement)?.value.trim();
+    const password = (form.elements.namedItem("password") as HTMLInputElement)?.value.trim();
+
+    if (username === adminUser && password === adminPass) {
+      window.alert("✅ Sign in successful!");
+      // You can redirect to dashboard here, for example:
+      window.location.href = "/admin";
+    } else {
+      window.alert("❌ Invalid credentials. Please try again.");
+    }
+  }, [adminUser, adminPass]);
+
   return (
     <div
       className="flex min-h-screen items-center justify-center bg-cover bg-center p-4"
       style={{ backgroundImage: "url('/background.png')" }}
     >
-      {/* Card */}
       <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl p-8 md:p-12">
         {/* Logo */}
         <div className="flex justify-center mb-6">
@@ -23,7 +44,7 @@ export default function SignIn() {
         </h1>
 
         {/* Form */}
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={signIn}>
           {/* Username / Email */}
           <div>
             <label
@@ -34,6 +55,7 @@ export default function SignIn() {
             </label>
             <input
               id="username"
+              name="username"
               type="text"
               placeholder="Enter your username"
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0441B1] text-lg"
@@ -51,6 +73,7 @@ export default function SignIn() {
             </label>
             <input
               id="password"
+              name="password"
               type="password"
               placeholder="Enter your password"
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0441B1] text-lg"
@@ -58,7 +81,7 @@ export default function SignIn() {
             />
           </div>
 
-          {/* Submit Button */}
+          {/* Submit */}
           <button
             type="submit"
             className="w-full py-3 text-xl font-bold bg-[#0441B1] text-white rounded-lg hover:bg-blue-900 transition"
@@ -76,7 +99,6 @@ export default function SignIn() {
             Forgot Password?
           </a>
 
-          {/* Back to Home Button */}
           <Link href="/" className="w-full">
             <button className="w-full py-3 text-xl font-bold border-2 border-[#0441B1] text-[#0441B1] rounded-lg hover:bg-[#0441B1] hover:text-white transition">
               Back to Home

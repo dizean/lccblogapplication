@@ -1,7 +1,7 @@
 "use client";
 import { hooks } from "@/hooks/hooks";
 import { useState } from "react";
-import { DEPARTMENTS, CLASSIFICATIONS, STATUSES } from "@/hooks/constants";
+import { CLASSIFICATIONS, STATUSES } from "@/hooks/constants";
 
 interface Employee {
   name: string;
