@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 interface Employee {
   id: number;
   name: string;
-  department: string;
   classification: string;
   status: string;
   active?: number;
@@ -61,14 +60,12 @@ export const timeOut = () =>
 export const addEmployee = () =>
   useGenericMutation<{
     name: string;
-    department: string;
     classification: string;
     status: string;
   }>(
     (data) =>
       services.addEmployee({
         name: data.name,
-        department: data.department,
         classification: data.classification,
         status: data.status,
       }),
@@ -79,14 +76,12 @@ export const updateEmployee = () =>
   useGenericMutation<{
     id: number;
     name: string;
-    department: string;
     classification: string;
     status: string;
   }>(
-    ({ id, name, department, classification, status }) =>
+    ({ id, name, classification, status }) =>
       services.updateEmployee(id, {
         name,
-        department,
         classification,
         status,
       }),

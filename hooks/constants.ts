@@ -6,8 +6,11 @@ export const DEPARTMENTS = [
 ];
 
 export const CLASSIFICATIONS = [
+  "Administrator",
   "Teaching Personnel",
-  "Non-Teaching Personnel",
+  "Academic Non-Teaching Personnel",
+  "Non-Academic Non-Teaching Personnel",
+  "General Maintenance Staff"
 ];
 
 export const STATUSES = [

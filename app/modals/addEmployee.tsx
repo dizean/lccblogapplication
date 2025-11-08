@@ -5,7 +5,6 @@ import { DEPARTMENTS, CLASSIFICATIONS, STATUSES } from "@/hooks/constants";
 
 interface Employee {
   name: string;
-  department: string;
   classification: string;
   status: string;
 }
@@ -23,13 +22,12 @@ export default function AddEmployeeModal({
 }: AddEmployeeModalProps) {
   const [data, setData] = useState<Employee>({
     name: initialName,
-    department: "",
     classification: "",
     status: "",
   });
 
   const addEmployee = hooks.addEmployee();
-  const { name, department, classification, status } = data;
+  const { name, classification, status } = data;
 
   if (!isOpen) return null;
 
@@ -38,11 +36,10 @@ export default function AddEmployeeModal({
     try {
       await addEmployee.mutateAsync({
         name,
-        department,
         classification,
         status,
       });
-      setData({ name: "", department: "", classification: "", status: "" });
+      setData({ name: "", classification: "", status: "" });
       onClose();
     } catch (error) {
       console.error("Error adding employee:", error);
@@ -71,26 +68,6 @@ export default function AddEmployeeModal({
             placeholder="Enter employee full name"
             className="w-full px-8 py-5 text-2xl border border-gray-300 rounded-2xl focus:ring-4 focus:ring-[#0441B1]/40 outline-none transition-all"
           />
-        </div>
-
-        {/* Department */}
-        <div>
-          <label className="block text-2xl text-gray-700 font-semibold mb-3">
-            Department
-          </label>
-          <select
-            value={department}
-            onChange={(e) => setData({ ...data, department: e.target.value })}
-            required
-            className="w-full px-8 py-5 text-2xl border border-gray-300 rounded-2xl focus:ring-4 focus:ring-[#0441B1]/40 outline-none transition-all"
-          >
-            <option value="">Select Department</option>
-            {DEPARTMENTS.map((dept) => (
-              <option key={dept} value={dept}>
-                {dept}
-              </option>
-            ))}
-          </select>
         </div>
 
         {/* Classification */}

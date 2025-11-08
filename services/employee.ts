@@ -34,7 +34,6 @@ export const fetchEmployeeById = (id: number) =>
 /* ✅ Updated to send department/classification/status as text */
 export const addEmployee = (data: {
   name: string;
-  department: string;
   classification: string;
   status: string;
 }) =>
@@ -48,7 +47,6 @@ export const updateEmployee = (
   id: number,
   data: {
     name: string;
-    department: string;
     classification: string;
     status: string;
   }
