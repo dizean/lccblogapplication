@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { formatDate, formatTime } from "@/hooks/formatDateTime";
 import { hooks } from "@/hooks/hooks";
+import DatePicker from "../component/DatePicker";
 
 interface KeysLogProps {
   onBackToKeys: () => void;
@@ -40,11 +41,9 @@ export default function KeysLog({ onBackToKeys }: KeysLogProps) {
 
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto justify-end">
           {!showAll && (
-            <input
-              type="date"
+            <DatePicker
               value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-6 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0441B1] text-xl w-full sm:w-[200px]"
+              onChange={setSelectedDate}
             />
           )}
 

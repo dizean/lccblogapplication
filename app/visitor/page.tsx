@@ -4,6 +4,7 @@ import Link from "next/link";
 import { formatDate, formatTime } from "@/hooks/formatDateTime";
 import VisitorLoginModal from "../modals/visitorLogin";
 import { hooks } from "@/hooks/hooks";
+import DatePicker from "../component/DatePicker";
 
 export default function VisitorPage() {
   const [showLoginForm, setShowLoginForm] = useState(false);
@@ -67,11 +68,9 @@ export default function VisitorPage() {
             {/* Buttons & Filters */}
             <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto justify-end">
               {!showAll && (
-                <input
-                  type="date"
+                <DatePicker
                   value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="px-6 py-5 text-xl rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0441B1] transition-all"
+                  onChange={setSelectedDate}
                 />
               )}
 
