@@ -74,7 +74,7 @@ export const KeysBorrowReturn = ({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto overflow-y-auto flex-grow rounded-xl max-h-[70vh]">
+      <div className="overflow-auto flex-grow rounded-xl border border-gray-200 max-h-[70vh]">
         <table className="w-full table-fixed border-collapse">
           <colgroup>
             <col className="w-[15%]" />

@@ -1,4 +1,5 @@
 "use client";
+
 import { hooks } from "@/hooks/hooks";
 import { useState } from "react";
 import { CLASSIFICATIONS, STATUSES } from "@/hooks/constants";
@@ -39,6 +40,7 @@ export default function AddEmployeeModal({
         classification,
         status,
       });
+
       setData({ name: "", classification: "", status: "" });
       onClose();
     } catch (error) {
@@ -47,17 +49,18 @@ export default function AddEmployeeModal({
   };
 
   return (
-    <div className="bg-white w-full max-w-3xl p-10 rounded-3xl shadow-2xl border border-gray-200 text-center animate-fadeIn">
-      {/* Title */}
-      <h2 className="text-4xl font-extrabold text-[#0441B1] mb-10 tracking-tight">
+    <div className="w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-gray-200 p-8">
+
+      {/* TITLE */}
+      <h2 className="text-2xl font-semibold text-[#0441B1] mb-6">
         Add New Employee
       </h2>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-8 text-left">
-        {/* Full Name */}
+      <form onSubmit={handleSubmit} className="space-y-5">
+
+        {/* NAME */}
         <div>
-          <label className="block text-2xl text-gray-700 font-semibold mb-3">
+          <label className="block text-sm text-gray-600 mb-1">
             Full Name
           </label>
           <input
@@ -65,14 +68,14 @@ export default function AddEmployeeModal({
             value={name}
             onChange={(e) => setData({ ...data, name: e.target.value })}
             required
-            placeholder="Enter employee full name"
-            className="w-full px-8 py-5 text-2xl border border-gray-300 rounded-2xl focus:ring-4 focus:ring-[#0441B1]/40 outline-none transition-all"
+            placeholder="Enter employee name"
+            className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0441B1] outline-none"
           />
         </div>
 
-        {/* Classification */}
+        {/* CLASSIFICATION */}
         <div>
-          <label className="block text-2xl text-gray-700 font-semibold mb-3">
+          <label className="block text-sm text-gray-600 mb-1">
             Classification
           </label>
           <select
@@ -81,9 +84,9 @@ export default function AddEmployeeModal({
               setData({ ...data, classification: e.target.value })
             }
             required
-            className="w-full px-8 py-5 text-2xl border border-gray-300 rounded-2xl focus:ring-4 focus:ring-[#0441B1]/40 outline-none transition-all"
+            className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0441B1] outline-none"
           >
-            <option value="">Select Classification</option>
+            <option value="">Select classification</option>
             {CLASSIFICATIONS.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -92,18 +95,18 @@ export default function AddEmployeeModal({
           </select>
         </div>
 
-        {/* Status */}
+        {/* STATUS */}
         <div>
-          <label className="block text-2xl text-gray-700 font-semibold mb-3">
+          <label className="block text-sm text-gray-600 mb-1">
             Status
           </label>
           <select
             value={status}
             onChange={(e) => setData({ ...data, status: e.target.value })}
             required
-            className="w-full px-8 py-5 text-2xl border border-gray-300 rounded-2xl focus:ring-4 focus:ring-[#0441B1]/40 outline-none transition-all"
+            className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0441B1] outline-none"
           >
-            <option value="">Select Status</option>
+            <option value="">Select status</option>
             {STATUSES.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -112,23 +115,26 @@ export default function AddEmployeeModal({
           </select>
         </div>
 
-        {/* Buttons (Submit Left, Cancel Right) */}
-        <div className="flex flex-col sm:flex-row justify-between gap-6 pt-10">
-          <button
-            type="submit"
-            className="w-full sm:w-1/2 px-12 py-6 text-2xl bg-green-600 text-white font-semibold rounded-2xl hover:bg-green-700 transition-all shadow-md"
-          >
-            Save Employee
-          </button>
+        {/* BUTTONS */}
+        <div className="flex gap-3 pt-3">
 
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-1/2 px-12 py-6 text-2xl bg-gray-400 text-white font-semibold rounded-2xl hover:bg-gray-500 transition-all shadow-md"
+            className="flex-1 px-4 py-3 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
           >
             Cancel
           </button>
+
+          <button
+            type="submit"
+            className="flex-1 px-4 py-3 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+          >
+            Save
+          </button>
+
         </div>
+
       </form>
     </div>
   );
