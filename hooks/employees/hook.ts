@@ -1,4 +1,4 @@
-import { services } from "@/services/services";
+import services  from "@/services/services";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface Employee {
@@ -93,3 +93,10 @@ export const deleteEmployee = () =>
     (id) => services.deleteEmployee(id),
     "employees"
   );
+
+  export const fetchEmployeesRangeLog = (start: string, end: string) =>
+  useQuery({
+    queryKey: ["employeesLog", "range", start, end],
+    queryFn: () => services.fetchEmployeesRange(start, end),
+    enabled: !!start && !!end, // prevents auto run if empty
+  });

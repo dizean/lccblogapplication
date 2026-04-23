@@ -34,3 +34,10 @@ export const visitorLogout = (id: number) =>
     method: "PUT",
     body: JSON.stringify({ id }),
   });
+
+export const fetchVisitorsToday = () => request("/visitors/todayLogs");
+
+export const fetchVisitorsAll = () => request("/visitors/allLogs");
+
+export const fetchVisitorsRange = (start: string, end: string) =>
+  request(`/visitors/range?start=${start}&end=${end}`);

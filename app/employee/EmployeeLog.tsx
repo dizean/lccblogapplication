@@ -1,124 +1,137 @@
 "use client";
+
 import { useState } from "react";
 import { formatDate, formatTime } from "@/hooks/formatDateTime";
 import { hooks } from "@/hooks/hooks";
 import DatePicker from "../component/DatePicker";
 
 interface EmployeesLogProps {
-    onBackToDTR: () => void;
+  onBackToDTR: () => void;
 }
 
 export default function EmployeesLog({ onBackToDTR }: EmployeesLogProps) {
-    const [searchTerm, setSearchTerm] = useState("");
-    const [selectedDate, setSelectedDate] = useState(
-        new Date().toISOString().split("T")[0]
-    );
-    const [showAll, setShowAll] = useState(false);
-    const { data: employeesLog = [] } = hooks.fetchEmployeesLog();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [showAll, setShowAll] = useState(false);
 
-    const filteredLogs = employeesLog.filter((log: any) => {
-        const matchesName = log.name
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase());
-        const matchesDate = showAll
-            ? true
-            : selectedDate
-                ? new Date(log.date).toLocaleDateString("en-CA") === selectedDate
-                : true;
-        return matchesName && matchesDate;
-    });
+  const { data: employeesLog = [] } = hooks.fetchEmployeesLog();
 
-    return (
-        <>
-            {/* FILTER BAR */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10 w-full">
-                <input
-                    type="text"
-                    placeholder="🔍 Search employee name..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full md:w-1/2 px-10 py-5 text-lg rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0441B1] transition-all"
-                />
+  const filteredLogs = employeesLog.filter((log: any) => {
+    const matchesName = log.name
+      ?.toLowerCase()
+      .includes(searchTerm.toLowerCase());
 
-                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto justify-end">
-                    {!showAll && (
-                        <DatePicker
-                            value={selectedDate}
-                            onChange={setSelectedDate}
-                        />
-                    )}
-                    <button
-                        onClick={() => setShowAll(!showAll)}
-                        className={`w-full sm:w-[210px] px-8 py-5 text-xl font-semibold rounded-xl transition-all shadow-md 
-                        ${showAll
-                                ? "bg-yellow-800 text-white hover:bg-yellow-600"
-                                : "bg-yellow-600 text-white hover:bg-yellow-400"
-                            }`}
-                    >
-                        {showAll ? "Filter by Date" : "Show All"}
-                    </button>
+    const matchesDate = showAll
+      ? true
+      : selectedDate
+      ? new Date(log.date).toLocaleDateString("en-CA") === selectedDate
+      : true;
 
+    return matchesName && matchesDate;
+  });
 
-                    <button
-                        onClick={onBackToDTR}
-                        className="w-full sm:w-[210px] px-8 py-5 text-xl bg-[#0441B1] text-white font-semibold rounded-xl hover:bg-blue-900 transition-all shadow-md"
-                    >
-                        ← Back to DTR
-                    </button>
-                </div>
+  return (
+    <div className="w-full flex flex-col gap-6">
+
+      {/* FILTER BAR */}
+      <div className="w-full flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4">
+
+        {/* SEARCH */}
+        <input
+          type="text"
+          placeholder="Search employee name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full xl:w-[40%] px-6 py-4 text-lg rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0441B1]"
+        />
+
+        {/* CONTROLS */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto justify-end">
+
+          {/* DATE PICKER */}
+          {!showAll && (
+            <div className="w-full sm:w-auto">
+              <DatePicker
+                value={selectedDate}
+                onChange={setSelectedDate}
+                className="w-full"
+              />
             </div>
+          )}
 
-            {/* LOGS TABLE */}
-            <div className="overflow-x-auto overflow-y-auto flex-grow rounded-xl max-h-[70vh]">
-                <table className="w-full table-fixed border-collapse">
-                    <colgroup>
-                        <col className="w-[30%]" />
-                        <col className="w-[25%]" />
-                        <col className="w-[22.5%]" />
-                        <col className="w-[22.5%]" />
-                    </colgroup>
+          {/* TOGGLE DATE / ALL */}
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className={`px-6 py-4 rounded-xl font-semibold transition shadow-md w-full sm:w-[180px]
+              ${
+                showAll
+                  ? "bg-yellow-700 text-white hover:bg-yellow-600"
+                  : "bg-yellow-500 text-white hover:bg-yellow-400"
+              }`}
+          >
+            {showAll ? "Filter Date" : "Show All"}
+          </button>
 
-                    <thead className="sticky top-0 z-10 bg-[#0441B1] text-white text-3xl shadow-md">
-                        <tr>
-                            <th className="p-8 text-left">Employee</th>
-                            <th className="p-8 text-center">Date</th>
-                            <th className="p-8 text-center">Time In</th>
-                            <th className="p-8 text-center">Time Out</th>
-                        </tr>
-                    </thead>
+          {/* BACK BUTTON */}
+          <button
+            onClick={onBackToDTR}
+            className="px-6 py-4 rounded-xl bg-[#0441B1] text-white font-semibold hover:bg-blue-900 transition shadow-md w-full sm:w-[180px]"
+          >
+            ← Back
+          </button>
+        </div>
+      </div>
 
-                    <tbody>
-                        {filteredLogs.length > 0 ? (
-                            filteredLogs.map((log: any, index: number) => (
-                                <tr
-                                    key={index}
-                                    className="border-b text-2xl hover:bg-gray-50 transition"
-                                >
-                                    <td className="p-8 font-semibold truncate">{log.name}</td>
-                                    <td className="p-8 text-center">
-                                        {log.date ? formatDate(log.date) : "----"}
-                                    </td>
-                                    <td className="p-8 text-center">
-                                        {log.time_in ? formatTime(log.time_in) : "----"}
-                                    </td>
-                                    <td className="p-8 text-center">
-                                        {log.time_out ? formatTime(log.time_out) : "----"}
-                                    </td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td
-                                    colSpan={4}
-                                    className="py-8 text-gray-500 text-center text-xl"
-                                >
-                                    No employee logs found.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-        </>
-    );
+      {/* TABLE */}
+      <div className="overflow-x-auto rounded-xl max-h-[70vh] border shadow-sm">
+
+        <table className="w-full border-collapse">
+
+          <thead className="sticky top-0 bg-[#0441B1] text-white text-xl z-10">
+            <tr>
+              <th className="p-5 text-left">Employee</th>
+              <th className="p-5 text-center">Date</th>
+              <th className="p-5 text-center">Time In</th>
+              <th className="p-5 text-center">Time Out</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {filteredLogs.length > 0 ? (
+              filteredLogs.map((log: any, index: number) => (
+                <tr
+                  key={index}
+                  className="border-b hover:bg-gray-50 transition text-lg"
+                >
+                  <td className="p-5 font-medium truncate">{log.name}</td>
+                  <td className="p-5 text-center">
+                    {log.date ? formatDate(log.date) : "----"}
+                  </td>
+                  <td className="p-5 text-center">
+                    {log.time_in ? formatTime(log.time_in) : "----"}
+                  </td>
+                  <td className="p-5 text-center">
+                    {log.time_out ? formatTime(log.time_out) : "----"}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="py-10 text-center text-gray-500 text-lg"
+                >
+                  No employee logs found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+
+        </table>
+
+      </div>
+    </div>
+  );
 }

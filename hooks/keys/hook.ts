@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { services } from "@/services/services";
+import services  from "@/services/services";
 
 interface Key {
   id: number;
@@ -60,7 +60,12 @@ export const addKey = () =>
       }),
     "keys"
   );
-
+export const fetchKeysRangeLog = (start: string, end: string) =>
+  useQuery({
+    queryKey: ["keysLog", "range", start, end],
+    queryFn: () => services.fetchKeysRange(start, end),
+    enabled: !!start && !!end,
+  });
 // export const updateKey = () =>
 //   useGenericMutation<{
 //     id: number;

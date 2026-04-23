@@ -35,3 +35,13 @@ export const timeOut = (id: number) =>
 
 export const fetchEmployeesLog = () =>
   request("/employeesLog");
+
+export const fetchEmployeesToday = () =>
+  request("/employeesLog/todayLogs");
+
+export const fetchEmployeesAll = () =>
+  request("/employeesLog/allLogs");
+
+
+export const fetchEmployeesRange = (start: string, end: string) =>
+  request(`/employeesLog/range?start=${start}&end=${end}`);

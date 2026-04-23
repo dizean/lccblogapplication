@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { services } from "@/services/services";
+import services from "@/services/services";
 
 export const visitorLogin = () => {
   const queryClient = useQueryClient();
@@ -29,3 +29,10 @@ export const visitors = () => {
     refetchOnWindowFocus: false,
   });
 };
+
+export const fetchVisitorsRangeLog = (start: string, end: string) =>
+  useQuery({
+    queryKey: ["visitorsLog", "range", start, end],
+    queryFn: () => services.fetchVisitorsRange(start, end),
+    enabled: !!start && !!end,
+  });

@@ -34,3 +34,10 @@ export const returnKey = (keyId: number, employeeId: number) =>
     method: "PUT",
     body: JSON.stringify({ keyId, employeeId }),
   });
+
+
+export const fetchKeysToday = () => request("/keysLog/todayLogs");
+
+export const fetchKeysAll = () => request("/keysLog/allLogs");
+export const fetchKeysRange = (start: string, end: string) =>
+  request(`/keysLog/range?start=${start}&end=${end}`);
