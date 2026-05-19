@@ -1,2 +1,3 @@
 <!-- PROJECT LOG APPLICATION MADE FOR LCCB -->
 <!-- FOR TEST? -->
+<!-- add camera -->
