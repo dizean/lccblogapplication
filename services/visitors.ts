@@ -23,10 +23,10 @@ const request = async (url: string, options?: RequestInit) => {
 
 export const fetchVisitors = () => request("/visitors");
 
-export const visitorLogin = (name: string, purpose: string) =>
+export const visitorLogin = (name: string, purpose: string, id: string, img: string) =>
   request("/visitors/in", {
     method: "POST",
-    body: JSON.stringify({ name, purpose }),
+    body: JSON.stringify({ name, purpose, id, img }),
   });
 
 export const visitorLogout = (id: number) =>
@@ -41,3 +41,15 @@ export const fetchVisitorsAll = () => request("/visitors/allLogs");
 
 export const fetchVisitorsRange = (start: string, end: string) =>
   request(`/visitors/range?start=${start}&end=${end}`);
+
+
+// UPLOAD IMAGE
+export const uploadVisitorImage = (file: File) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return request("/upload", {
+    method: "POST",
+    body: formData,
+  });
+}

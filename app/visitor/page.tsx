@@ -15,13 +15,21 @@ export default function VisitorPage() {
   );
   const [showAll, setShowAll] = useState(false);
 
+  // MODALS
+  const [selectedLog, setSelectedLog] = useState<any>(null);
+
   const { data: logs = [], isLoading, error } = hooks.visitors();
   const visitorLogin = hooks.visitorLogin();
   const visitorLogout = hooks.visitorLogout();
 
-  const handleLogin = async (name: string, purpose: string) => {
+  const handleLogin = async (
+    name: string,
+    purpose: string,
+    id: string,
+    img: string
+  ) => {
     visitorLogin.mutate(
-      { name, purpose },
+      { name, purpose, id, img },
       { onSuccess: () => setShowLoginForm(false) }
     );
   };
@@ -46,10 +54,11 @@ export default function VisitorPage() {
 
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-100 overflow-hidden">
+
       {/* HEADER */}
       <header className="w-full flex flex-col md:flex-row justify-between items-center gap-4 px-4 sm:px-6 md:px-10 py-4 bg-white shadow-md">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#0441B1] text-center md:text-left">
-         Visitor`s Log
+          Visitor`s Log
         </h1>
 
         <Link
@@ -59,132 +68,135 @@ export default function VisitorPage() {
           ← Back to Home
         </Link>
       </header>
-       <main className="flex-1 w-full overflow-hidden">
+
+      <main className="flex-1 w-full overflow-hidden">
         <div className="h-full w-full flex flex-col p-2 sm:p-4 md:p-6">
-<div className="w-full flex flex-col gap-6">
+          <div className="w-full flex flex-col gap-6">
 
-        {/* FILTER BAR */}
-        <div className="w-full flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4">
-          <input
-            type="text"
-            placeholder="Search visitor name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full xl:w-[40%] px-6 py-4 text-lg rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0441B1]"
-          />
+            {/* FILTER BAR */}
+            <div className="w-full flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4">
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto justify-end">
+              <input
+                type="text"
+                placeholder="Search visitor name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full xl:w-[40%] px-6 py-4 text-lg rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0441B1]"
+              />
 
-            {/* DATE PICKER */}
-            {!showAll && (
-              <div className="w-full sm:w-auto">
-                <DatePicker
-                  value={selectedDate}
-                  onChange={setSelectedDate}
-                  className="w-full"
-                />
+              <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto justify-end">
+
+                {!showAll && (
+                  <DatePicker
+                    value={selectedDate}
+                    onChange={setSelectedDate}
+                    className="w-full"
+                  />
+                )}
+
+                <button
+                  onClick={() => setShowAll(!showAll)}
+                  className={`px-6 py-4 rounded-xl font-semibold transition shadow-md w-full sm:w-[180px]
+                  ${showAll
+                      ? "bg-yellow-700 text-white hover:bg-yellow-600"
+                      : "bg-yellow-500 text-white hover:bg-yellow-400"
+                    }`}
+                >
+                  {showAll ? "Filter by Date" : "Show All"}
+                </button>
+
+                <button
+                  onClick={() => setShowLoginForm(true)}
+                  className="px-6 py-4 rounded-xl bg-[#0441B1] text-white font-semibold hover:bg-blue-900 transition shadow-md w-full sm:w-[180px]"
+                >
+                  Check In
+                </button>
               </div>
-            )}
+            </div>
 
-            <button
-              onClick={() => setShowAll(!showAll)}
-              className={`px-6 py-4 rounded-xl font-semibold transition shadow-md w-full sm:w-[180px]
-                ${showAll
-                  ? "bg-yellow-700 text-white hover:bg-yellow-600"
-                  : "bg-yellow-500 text-white hover:bg-yellow-400"
-                }`}
-            >
-              {showAll ? "Filter by Date" : "Show All"}
-            </button>
+            {/* TABLE */}
+            <div className="overflow-x-auto rounded-xl max-h-[70vh] border shadow-sm">
 
-            <button
-              onClick={() => setShowLoginForm(true)}
-              className="px-6 py-4 rounded-xl bg-[#0441B1] text-white font-semibold hover:bg-blue-900 transition shadow-md w-full sm:w-[180px]"
-            >
-              Check In
-            </button>
+              {isLoading ? (
+                <p className="text-center p-6">Loading logs...</p>
+              ) : error ? (
+                <p className="text-center p-6 text-red-600">
+                  Failed to load logs
+                </p>
+              ) : (
+                <table className="w-full border-collapse">
 
+                  <thead className="sticky top-0 bg-[#0441B1] text-white text-xl z-10">
+                    <tr>
+                      <th className="p-8 text-left">Name</th>
+                      <th className="p-8 text-left">Purpose</th>
+                      <th className="p-8 text-center">Date</th>
+                      <th className="p-8 text-center">Time In - Time Out</th>
+                      <th className="p-8 text-center">Action</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {filteredLogs.length > 0 ? (
+                      filteredLogs.map((log: any, index: number) => (
+                        <tr
+                          key={index}
+                          onClick={() => setSelectedLog(log)}
+                          className="border-b hover:bg-gray-50 transition text-lg cursor-pointer"
+                        >
+                          <td className="p-5 font-semibold">{log.name}</td>
+                          <td className="p-5">{log.purpose}</td>
+                          <td className="p-5 text-center">
+                            {formatDate(log.date)}
+                          </td>
+                          <td className="p-5 text-center">
+                            {formatTime(log.logged_in)} -{" "}
+                            {log.logged_out
+                              ? formatTime(log.logged_out)
+                              : "----"}
+                          </td>
+
+                          <td className="p-5 text-center">
+
+                            {log.logged_out ? (
+                              <span className="text-green-600 font-semibold">
+                                Completed
+                              </span>
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleLogout(log.id);
+                                }}
+                                className="px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition"
+                              >
+                                Log Out
+                              </button>
+                            )}
+
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="py-10 text-center text-gray-500 text-lg"
+                        >
+                          No visitor logs found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+
+                </table>
+              )}
+            </div>
           </div>
         </div>
-
-        {/* TABLE */}
-        <div className="overflow-x-auto rounded-xl max-h-[70vh] border shadow-sm">
-
-          {isLoading ? (
-            <p className="text-center p-6 text-base">Loading logs...</p>
-          ) : error ? (
-            <p className="text-center p-6 text-red-600 text-base">
-              Failed to load logs
-            </p>
-          ) : (
-            <table className="w-full border-collapse">
-
-              <thead className="sticky top-0 bg-[#0441B1] text-white text-xl z-10">
-                <tr>
-                  <th className="p-8 text-left">Name</th>
-                  <th className="p-8 text-left">Purpose</th>
-                  <th className="p-8 text-center">Date</th>
-                  <th className="p-8 text-center">Time In - Time Out</th>
-                  <th className="p-8 text-center">Action</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {filteredLogs.length > 0 ? (
-                  filteredLogs.map((log: any, index: number) => (
-                    <tr
-                      key={index}
-                      className="border-b hover:bg-gray-50 transition text-lg"
-                    >
-                      <td className="p-5 font-semibold">{log.name}</td>
-
-                      <td className="p-5 text-left">{log.purpose}</td>
-
-                      <td className="p-5 text-center">
-                        {formatDate(log.date)}
-                      </td>
-                      <td className="p-5 text-center">
-                        {formatTime(log.logged_in)} -
-                        {log.logged_out
-                          ? formatTime(log.logged_out)
-                          : "----"}
-                      </td>
-
-                      <td className="p-5 text-center">
-                        {log.logged_out ? (
-                          <span className="text-green-600 font-semibold">
-                            Completed
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => handleLogout(log.id)}
-                            className="px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition"
-                          >
-                            Log Out
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="py-10 text-center text-gray-500 text-lg">
-                      No visitor logs found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-
-            </table>
-          )}
-        </div>
-      </div>
-        </div>
       </main>
-      {/* CONTENT */}
-      
 
-      {/* MODAL */}
+      {/* CHECK-IN MODAL */}
       {showLoginForm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
           <div className="w-full max-w-lg">
@@ -196,6 +208,82 @@ export default function VisitorPage() {
           </div>
         </div>
       )}
+
+      {/* DETAILS MODAL */}
+      {selectedLog && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+
+          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6 relative">
+
+            {/* CLOSE */}
+            <button
+              onClick={() => setSelectedLog(null)}
+              className="absolute top-3 right-3 text-gray-600 hover:text-black text-2xl"
+            >
+              ✕
+            </button>
+
+            <h2 className="text-2xl font-bold text-[#0441B1] mb-4">
+              Visitor Details
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-lg">
+
+              <div>
+                <p className="font-semibold">Name</p>
+                <p>{selectedLog.name}</p>
+              </div>
+
+              <div>
+                <p className="font-semibold">Purpose</p>
+                <p>{selectedLog.purpose}</p>
+              </div>
+
+              <div>
+                <p className="font-semibold">Date</p>
+                <p>{formatDate(selectedLog.date)}</p>
+              </div>
+
+              <div>
+                <p className="font-semibold">Time In</p>
+                <p>{formatTime(selectedLog.logged_in)}</p>
+              </div>
+
+              <div>
+                <p className="font-semibold">Time Out</p>
+                <p>
+                  {selectedLog.logged_out
+                    ? formatTime(selectedLog.logged_out)
+                    : "Still inside"}
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold">ID Type</p>
+                <p>{selectedLog.id}</p>
+              </div>
+
+            </div>
+
+            {/* IMAGE */}
+            <div className="mt-6">
+              <p className="font-semibold mb-2">Captured Image</p>
+
+              {selectedLog.img ? (
+                <img
+                  src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${selectedLog.img}`}
+                  className="w-full max-h-[400px] object-cover rounded-xl border"
+                  alt="visitor"
+                />
+              ) : (
+                <p className="text-gray-500">No image available</p>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
