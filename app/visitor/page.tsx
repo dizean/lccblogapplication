@@ -14,22 +14,21 @@ export default function VisitorPage() {
     new Date().toISOString().split("T")[0]
   );
   const [showAll, setShowAll] = useState(false);
-
   // MODALS
   const [selectedLog, setSelectedLog] = useState<any>(null);
 
   const { data: logs = [], isLoading, error } = hooks.visitors();
   const visitorLogin = hooks.visitorLogin();
   const visitorLogout = hooks.visitorLogout();
-
   const handleLogin = async (
     name: string,
     purpose: string,
     id: string,
-    img: string
+    img: string,
+    gate: string
   ) => {
     visitorLogin.mutate(
-      { name, purpose, id, img },
+      { name, purpose, gate, id, img },
       { onSuccess: () => setShowLoginForm(false) }
     );
   };

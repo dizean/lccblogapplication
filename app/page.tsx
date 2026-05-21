@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -12,6 +12,34 @@ export default function Home() {
   const [endDate, setEndDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingCard, setLoadingCard] = useState<string | null>(null);
+
+  // GATE STATES
+  const [selectedGate, setSelectedGate] = useState("");
+  const [showDashboard, setShowDashboard] = useState(false);
+
+  const gates = [
+    "Main Gate",
+    "East Gate",
+    "West Gate",
+    "South Gate",
+  ];
+
+  // LOAD SAVED GATE
+  useEffect(() => {
+    const savedGate = localStorage.getItem("selectedGate");
+
+    if (savedGate) {
+      setSelectedGate(savedGate);
+      setShowDashboard(true);
+    }
+  }, []);
+
+  // SELECT GATE
+  function handleSelectGate(gate: string) {
+    localStorage.setItem("selectedGate", gate);
+    setSelectedGate(gate);
+    setShowDashboard(true);
+  }
 
   async function downloadExcel(type: "today" | "all" | "range") {
     const sheetNames = ["Employees", "Keys", "Visitors"];
@@ -55,7 +83,11 @@ export default function Home() {
 
       results.forEach((data, index) => {
         const worksheet = XLSX.utils.json_to_sheet(data || []);
-        XLSX.utils.book_append_sheet(workbook, worksheet, sheetNames[index]);
+        XLSX.utils.book_append_sheet(
+          workbook,
+          worksheet,
+          sheetNames[index]
+        );
       });
 
       const wbout = XLSX.write(workbook, {
@@ -94,114 +126,196 @@ export default function Home() {
             alt="LCCB Logo"
             className="h-12 sm:h-14 md:h-16 w-auto"
           />
+
+          {/* CURRENT GATE */}
+          {selectedGate && (
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex flex-col items-end">
+                <span className="text-xs text-gray-500">
+                  Selected Gate
+                </span>
+                <span className="font-semibold text-blue-700">
+                  {selectedGate}
+                </span>
+              </div>
+
+              <button
+                onClick={() => {
+                  localStorage.removeItem("selectedGate");
+                  setSelectedGate("");
+                  setShowDashboard(false);
+                }}
+                className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm hover:bg-red-600 transition"
+              >
+                Change Gate
+              </button>
+            </div>
+          )}
         </header>
 
         {/* MAIN */}
         <main className="flex-1 flex items-center justify-center px-4 py-10">
 
-          <div className="w-full max-w-6xl flex flex-col items-center gap-12">
+          {/* GATE SELECTION */}
+          {!showDashboard ? (
+            <div className="w-full max-w-3xl bg-white/95 rounded-3xl shadow-2xl p-8 sm:p-10">
 
-            {/* CARDS */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
+              <div className="text-center mb-10">
+                <h1 className="text-3xl sm:text-4xl font-bold text-blue-700">
+                  Select Gate
+                </h1>
 
-              {[
-                { title: "Employees DTR", desc: "Time records", href: "/employee" },
-                { title: "Keys Log", desc: "Key tracking", href: "/key" },
-                { title: "Visitors Log", desc: "Visitor monitoring", href: "/visitor" },
-              ].map((item, i) => (
-                <div key={i} className="w-full flex justify-center">
+                <p className="text-gray-500 mt-3">
+                  Choose the gate before accessing the dashboard
+                </p>
+              </div>
 
-                  <Link
-                    href={item.href}
-                    onClick={() => setLoadingCard(item.href)}
-                    className="w-full max-w-md"
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+                {gates.map((gate, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSelectGate(gate)}
+                    className="h-32 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 text-white text-xl font-semibold shadow-lg hover:scale-[1.03] transition-all duration-300"
                   >
+                    {gate}
+                  </button>
+                ))}
 
-                    <div className="relative h-80 bg-white/95 rounded-2xl shadow-lg border-l-4 border-blue-600 p-8 flex flex-col justify-between hover:scale-[1.03] transition">
+              </div>
 
-                      {/* LOADER */}
-                      {loadingCard === item.href && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-2xl">
-                          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            // DASHBOARD
+            <div className="w-full max-w-6xl flex flex-col items-center gap-12">
+
+              {/* CARDS */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
+
+                {[
+                  {
+                    title: "Employees DTR",
+                    desc: "Time records",
+                    href: "/employee",
+                  },
+                  {
+                    title: "Keys Log",
+                    desc: "Key tracking",
+                    href: "/key",
+                  },
+                  {
+                    title: "Visitors Log",
+                    desc: "Visitor monitoring",
+                    href: "/visitor",
+                  },
+                ].map((item, i) => (
+                  <div key={i} className="w-full flex justify-center">
+
+                    <Link
+                      href={item.href}
+                      onClick={() => setLoadingCard(item.href)}
+                      className="w-full max-w-md"
+                    >
+
+                      <div className="relative h-80 bg-white/95 rounded-2xl shadow-lg border-l-4 border-blue-600 p-8 flex flex-col justify-between hover:scale-[1.03] transition">
+
+                        {/* LOADER */}
+                        {loadingCard === item.href && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-2xl">
+                            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
+
+                        <div>
+                          <h2 className="text-3xl font-bold text-blue-700">
+                            {item.title}
+                          </h2>
+
+                          <p className="text-gray-500 mt-3 text-lg">
+                            {item.desc}
+                          </p>
                         </div>
-                      )}
 
-                      <div>
-                        <h2 className="text-3xl font-bold text-blue-700">
-                          {item.title}
-                        </h2>
-                        <p className="text-gray-500 mt-3 text-lg">
-                          {item.desc}
-                        </p>
+                        <div className="text-blue-600 font-semibold text-lg">
+                          Open →
+                        </div>
+
                       </div>
 
-                      <div className="text-blue-600 font-semibold text-lg">
-                        Open →
-                      </div>
+                    </Link>
 
-                    </div>
+                  </div>
+                ))}
 
-                  </Link>
+              </div>
+
+              {/* EXPORT PANEL */}
+              <div className="w-full max-w-4xl bg-white/95 rounded-2xl shadow-lg p-6">
+
+                <h2 className="text-xl font-semibold mb-5 text-gray-800">
+                  Export Logs
+                </h2>
+
+                {/* DATE PICKERS */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                  <div>
+                    <label className="text-xs text-gray-500">
+                      Start Date
+                    </label>
+
+                    <DatePicker
+                      value={new Date().toISOString().split("T")[0]}
+                      onChange={setStartDate}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-gray-500">
+                      End Date
+                    </label>
+
+                    <DatePicker
+                      value={new Date().toISOString().split("T")[0]}
+                      onChange={setEndDate}
+                    />
+                  </div>
 
                 </div>
-              ))}
 
-            </div>
+                {/* BUTTONS */}
+                <div className="flex flex-col sm:flex-row gap-3 mt-5">
 
-            {/* EXPORT PANEL */}
-            <div className="w-full max-w-4xl bg-white/95 rounded-2xl shadow-lg p-6">
+                  <button
+                    onClick={() => downloadExcel("range")}
+                    disabled={loading}
+                    className="bg-purple-600 text-white px-5 py-3 rounded-xl hover:bg-purple-700 disabled:opacity-50 w-full"
+                  >
+                    Export Range
+                  </button>
 
-              <h2 className="text-xl font-semibold mb-5 text-gray-800">
-                Export Logs
-              </h2>
+                  <button
+                    onClick={() => downloadExcel("today")}
+                    disabled={loading}
+                    className="bg-blue-600 text-white px-5 py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 w-full"
+                  >
+                    Today Logs
+                  </button>
 
-              {/* DATE PICKERS */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <button
+                    onClick={() => downloadExcel("all")}
+                    disabled={loading}
+                    className="bg-green-600 text-white px-5 py-3 rounded-xl hover:bg-green-700 disabled:opacity-50 w-full"
+                  >
+                    All Logs
+                  </button>
 
-                <div>
-                  <label className="text-xs text-gray-500">Start Date</label>
-                  <DatePicker value={new Date().toISOString().split("T")[0]} onChange={setStartDate} />
-                </div>
-
-                <div>
-                  <label className="text-xs text-gray-500">End Date</label>
-                  <DatePicker value={new Date().toISOString().split("T")[0]} onChange={setEndDate} />
                 </div>
 
               </div>
 
-              {/* BUTTONS */}
-              <div className="flex flex-col sm:flex-row gap-3 mt-5">
-
-                <button
-                  onClick={() => downloadExcel("range")}
-                  disabled={loading}
-                  className="bg-purple-600 text-white px-5 py-3 rounded-xl hover:bg-purple-700 disabled:opacity-50 w-full"
-                >
-                  Export Range
-                </button>
-
-                <button
-                  onClick={() => downloadExcel("today")}
-                  disabled={loading}
-                  className="bg-blue-600 text-white px-5 py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 w-full"
-                >
-                  Today Logs
-                </button>
-
-                <button
-                  onClick={() => downloadExcel("all")}
-                  disabled={loading}
-                  className="bg-green-600 text-white px-5 py-3 rounded-xl hover:bg-green-700 disabled:opacity-50 w-full"
-                >
-                  All Logs
-                </button>
-
-              </div>
-
             </div>
-
-          </div>
+          )}
 
         </main>
 

@@ -8,6 +8,7 @@ interface VisitorLoginModalProps {
   onSubmit: (
     name: string,
     purpose: string,
+    gate: string,
     id: string,
     img: string
   ) => void;
@@ -22,7 +23,7 @@ export default function VisitorLoginModal({
   const [purpose, setPurpose] = useState("");
   const [idType, setIdType] = useState("");
   const [otherId, setOtherId] = useState("");
-
+  const gate = localStorage.getItem("gate") || "Main Gate";
   // IMAGE
   const [img, setImg] = useState("");
   const [preview, setPreview] = useState("");
@@ -150,7 +151,7 @@ const handleSubmit = async () => {
     console.log("Uploaded:", data);
 
     // send ONLY filename to DB
-    onSubmit(name, purpose, finalId, data.fileName);
+    onSubmit(name, purpose, gate, finalId, data.fileName);
 
     // reset
     setName("");
