@@ -1,6 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
+import * as faceapi from "face-api.js";
+import { loadFaceModels } from "../faceapi/faceapi";
 
 interface VisitorLoginModalProps {
   isOpen: boolean;
@@ -10,7 +12,8 @@ interface VisitorLoginModalProps {
     purpose: string,
     gate: string,
     id: string,
-    img: string
+    img: string,
+    descriptor: string
   ) => void;
 }
 
@@ -23,305 +26,265 @@ export default function VisitorLoginModal({
   const [purpose, setPurpose] = useState("");
   const [idType, setIdType] = useState("");
   const [otherId, setOtherId] = useState("");
-  const gate = localStorage.getItem("gate") || "Main Gate";
-  // IMAGE
-  const [img, setImg] = useState("");
-  const [preview, setPreview] = useState("");
 
-  // CAMERA
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const [capturedFile, setCapturedFile] = useState<File | null>(null);
+  const [step, setStep] = useState<"scan" | "form">("scan");
+  const [loading, setLoading] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+
+  const gate =
+    typeof window !== "undefined"
+      ? localStorage.getItem("gate") || "Main Gate"
+      : "Main Gate";
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    loadFaceModels();
+  }, []);
 
   if (!isOpen) return null;
 
-  // START CAMERA
   const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment",
-        },
-        audio: false,
-      });
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-
-      setCameraOpen(true);
-    } catch (error) {
-      console.error(error);
-      alert("Unable to access camera");
-    }
-  };
-
-  // STOP CAMERA
-  const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-
-      stream.getTracks().forEach((track) => track.stop());
-
-      videoRef.current.srcObject = null;
-    }
-
-    setCameraOpen(false);
-  };
-
-  // CAPTURE IMAGE
-const captureImage = async () => {
-  if (!videoRef.current || !canvasRef.current) return;
-
-  const video = videoRef.current;
-  const canvas = canvasRef.current;
-
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  ctx.drawImage(video, 0, 0);
-
-  canvas.toBlob((blob) => {
-    if (!blob) return;
-
-    const cleanName = name
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "_")
-      .replace(/[^a-z0-9_]/g, "");
-
-    const fileName = `${cleanName}_${Date.now()}.jpg`;
-
-    const file = new File([blob], fileName, {
-      type: "image/jpeg",
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user" },
+      audio: false,
     });
 
-    // preview only
-    setPreview(URL.createObjectURL(file));
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
 
-    // store file ONLY (NO UPLOAD YET)
-    setCapturedFile(file);
+      await new Promise((resolve) => {
+        videoRef.current!.onloadedmetadata = async () => {
+          await videoRef.current!.play();
+          setCameraReady(true);
+          resolve(true);
+        };
+      });
+    }
+  };
 
-    // store filename for DB
-    setImg(fileName);
+  const stopCamera = () => {
+    const stream = videoRef.current?.srcObject as MediaStream;
+    stream?.getTracks().forEach((t) => t.stop());
+    setCameraReady(false);
+  };
 
-    stopCamera();
-  }, "image/jpeg", 0.95);
-};
+  const getDescriptor = async () => {
+    if (!videoRef.current) return null;
 
-  // SUBMIT
-const handleSubmit = async () => {
-  if (!name.trim() || !purpose.trim() || !idType.trim()) {
-    alert("Please fill out all fields.");
+    const detection = await faceapi
+      .detectSingleFace(
+        videoRef.current,
+        new faceapi.TinyFaceDetectorOptions()
+      )
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+
+    if (!detection) return null;
+
+    return Array.from(detection.descriptor);
+  };
+  const [imageName, setImageName] = useState("");
+  const [descriptor, setDescriptor] = useState("");
+  const captureAndCheck = async () => {
+  setLoading(true);
+
+  const descriptor = await getDescriptor();
+
+  if (!descriptor) {
+    alert("No face detected");
+    setLoading(false);
     return;
   }
-
-  if (idType === "Other ID" && !otherId.trim()) {
-    alert("Please specify the ID type.");
-    return;
-  }
-
-  if (!capturedFile) {
-    alert("Please capture an image.");
-    return;
-  }
-
-  const finalId = idType === "Other ID" ? otherId : idType;
-
+  setDescriptor(JSON.stringify(descriptor));
   try {
-    const formData = new FormData();
-    formData.append("file", capturedFile);
+    // 1. Capture image from video
+    const canvas = document.createElement("canvas");
+    const video = videoRef.current;
 
-    const res = await fetch("http://localhost:5432/upload", {
+    if (!video) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const blob: Blob = await new Promise((resolve) =>
+      canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.95)
+    );
+
+    const file = new File([blob], `visitor_${Date.now()}.jpg`, {
+      type: "image/jpeg",
+    });
+    
+    // 2. UPLOAD IMAGE FIRST
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const uploadRes = await fetch("http://localhost:5432/upload", {
       method: "POST",
       body: formData,
     });
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.message || "Upload failed");
+    const uploadData = await uploadRes.json();
+    setImageName(uploadData.fileName);
+    if (!uploadRes.ok) {
+      alert("Upload failed");
+      setLoading(false);
       return;
     }
 
-    console.log("Uploaded:", data);
+    // 3. SEND DESCRIPTOR + IMAGE NAME
+    const res = await fetch("http://localhost:5432/check", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        descriptor,
+      }),
+    });
 
-    // send ONLY filename to DB
-    onSubmit(name, purpose, gate, finalId, data.fileName);
+    const data = await res.json();
+    setLoading(false);
 
-    // reset
-    setName("");
-    setPurpose("");
-    setIdType("");
-    setOtherId("");
-    setImg("");
-    setPreview("");
-    setCapturedFile(null);
+    if (data.match) {
+      alert(`Welcome back Visitor ${data.visitor.visitor_id}`);
 
-    onClose();
-  } catch (error) {
-    console.error(error);
-    alert("Upload error");
+      await onSubmit(
+        "Known Visitor",
+        "Auto Login",
+        gate,
+        String(data.visitor.visitor_id),
+        uploadData.fileName,
+        JSON.stringify(descriptor)
+      );
+
+      stopCamera();
+      onClose();
+      return;
+    }
+
+    setStep("form");
+  } catch (err) {
+    console.error(err);
+    setLoading(false);
   }
 };
+  const handleSubmit = async () => {
+    const finalId = idType === "Other ID" ? otherId : idType;
 
-  // CLOSE MODAL
+    await onSubmit(
+      name,
+      purpose,
+      gate,
+      finalId,
+      imageName,
+      descriptor
+
+    );
+
+    stopCamera();
+    onClose();
+  };
+
   const handleClose = () => {
     stopCamera();
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      
-      <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl border border-gray-200 p-5 sm:p-8 max-h-[95vh] overflow-y-auto">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-xl bg-white p-5 rounded-xl">
 
-        {/* TITLE */}
-        <h2 className="text-2xl sm:text-3xl font-bold text-[#0441B1] mb-6 text-center">
-          Visitor Check-In
+        <h2 className="text-center text-xl font-bold text-blue-700">
+          Visitor System
         </h2>
 
-        {/* FORM */}
-        <div className="space-y-4">
-
-          {/* NAME */}
-          <input
-            type="text"
-            placeholder="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0441B1] outline-none"
-          />
-
-          {/* PURPOSE */}
-          <input
-            type="text"
-            placeholder="Purpose of Visit"
-            value={purpose}
-            onChange={(e) => setPurpose(e.target.value)}
-            className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0441B1] outline-none"
-          />
-
-          {/* ID TYPE */}
-          <select
-            value={idType}
-            onChange={(e) => {
-              setIdType(e.target.value);
-
-              if (e.target.value !== "Other ID") {
-                setOtherId("");
-              }
-            }}
-            className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#0441B1] outline-none"
-          >
-            <option value="">Select ID Type</option>
-            <option value="Driver’s License">Driver’s License</option>
-            <option value="Voter’s ID">Voter’s ID</option>
-            <option value="National ID">National ID</option>
-            <option value="Student ID">Student ID</option>
-            <option value="Other ID">Other ID</option>
-          </select>
-
-          {/* OTHER ID */}
-          {idType === "Other ID" && (
-            <input
-              type="text"
-              placeholder="Specify ID Type"
-              value={otherId}
-              onChange={(e) => setOtherId(e.target.value)}
-              className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0441B1] outline-none"
-            />
-          )}
-
-          {/* CAMERA */}
-          <div className="space-y-3">
-
-            {!cameraOpen && (
-              <button
-                type="button"
-                onClick={startCamera}
-                className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
-              >
-                Open Camera
-              </button>
-            )}
-
-            {/* VIDEO */}
+        {/* CAMERA STEP */}
+        {step === "scan" && (
+          <>
             <video
               ref={videoRef}
               autoPlay
               playsInline
-              muted
-              className={`w-full rounded-xl border bg-black ${
-                cameraOpen ? "block" : "hidden"
-              }`}
+              className="w-full mt-3 rounded bg-black"
             />
 
-            {/* HIDDEN CANVAS */}
-            <canvas ref={canvasRef} className="hidden" />
+            {!cameraReady ? (
+              <button
+                onClick={startCamera}
+                className="w-full mt-3 bg-blue-600 text-white p-2"
+              >
+                Start Camera
+              </button>
+            ) : (
+              <button
+                onClick={captureAndCheck}
+                className="w-full mt-3 bg-green-600 text-white p-2"
+              >
+                {loading ? "Scanning..." : "Scan Face"}
+              </button>
+            )}
+          </>
+        )}
 
-            {/* CAMERA ACTIONS */}
-            {cameraOpen && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* FORM STEP */}
+        {step === "form" && (
+          <div className="space-y-2 mt-3">
+            <input
+              placeholder="Name"
+              className="w-full border p-2"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
 
-                <button
-                  type="button"
-                  onClick={captureImage}
-                  className="w-full py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition"
-                >
-                  Capture Image
-                </button>
+            <input
+              placeholder="Purpose"
+              className="w-full border p-2"
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+            />
 
-                <button
-                  type="button"
-                  onClick={stopCamera}
-                  className="w-full py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition"
-                >
-                  Close Camera
-                </button>
+            <select
+              className="w-full border p-2"
+              value={idType}
+              onChange={(e) => setIdType(e.target.value)}
+            >
+              <option value="">Select ID</option>
+              <option>Driver’s License</option>
+              <option>Voter’s ID</option>
+              <option>National ID</option>
+              <option>Student ID</option>
+              <option>Other ID</option>
+            </select>
 
-              </div>
+            {idType === "Other ID" && (
+              <input
+                className="w-full border p-2"
+                placeholder="Specify ID"
+                value={otherId}
+                onChange={(e) => setOtherId(e.target.value)}
+              />
             )}
 
-            {/* PREVIEW */}
-            {preview && (
-              <div className="space-y-2">
-                <img
-                  src={preview}
-                  alt="Captured"
-                  className="w-full rounded-xl border object-cover max-h-80"
-                />
-
-                <p className="text-sm text-gray-600 break-all text-center">
-                  {img}
-                </p>
-              </div>
-            )}
+            <button
+              onClick={handleSubmit}
+              className="w-full bg-green-600 text-white p-2"
+            >
+              Register Visitor
+            </button>
           </div>
-        </div>
+        )}
 
-        {/* ACTIONS */}
-        <div className="flex flex-col sm:flex-row gap-3 mt-6">
+        <button
+          onClick={handleClose}
+          className="w-full mt-3 bg-gray-400 text-white p-2"
+        >
+          Close
+        </button>
 
-          <button
-            onClick={handleSubmit}
-            className="w-full sm:w-1/2 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition"
-          >
-            Submit
-          </button>
-
-          <button
-            onClick={handleClose}
-            className="w-full sm:w-1/2 py-3 bg-gray-400 text-white font-medium rounded-lg hover:bg-gray-500 transition"
-          >
-            Cancel
-          </button>
-
-        </div>
       </div>
     </div>
   );

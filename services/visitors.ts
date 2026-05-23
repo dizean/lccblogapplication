@@ -23,10 +23,10 @@ const request = async (url: string, options?: RequestInit) => {
 
 export const fetchVisitors = () => request("/visitors");
 
-export const visitorLogin = (name: string, purpose: string, gate: string, id: string) =>
+export const visitorLogin = (name: string, purpose: string, gate: string, id: string, image: string, descriptor: string) =>
   request("/visitors/in", {
     method: "POST",
-    body: JSON.stringify({ name, purpose, gate, id}),
+    body: JSON.stringify({ name, purpose, gate, id, image, descriptor }),
   });
 
 export const visitorLogout = (id: number) =>

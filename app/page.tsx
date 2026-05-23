@@ -18,10 +18,9 @@ export default function Home() {
   const [showDashboard, setShowDashboard] = useState(false);
 
   const gates = [
-    "Main Gate",
-    "East Gate",
-    "West Gate",
-    "South Gate",
+    "Rizal Gate",
+    "Galo Gate",
+    "St. Monica Gate"
   ];
 
   // LOAD SAVED GATE

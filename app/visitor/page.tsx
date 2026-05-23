@@ -23,12 +23,13 @@ export default function VisitorPage() {
   const handleLogin = async (
     name: string,
     purpose: string,
+    gate: string,
     id: string,
-    img: string,
-    gate: string
+    image: string,
+    descriptor: string
   ) => {
     visitorLogin.mutate(
-      { name, purpose, gate, id, img },
+      { name, purpose, gate, id, image, descriptor },
       { onSuccess: () => setShowLoginForm(false) }
     );
   };
