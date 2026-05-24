@@ -4,24 +4,11 @@ import { useRef, useState, useEffect } from "react";
 import * as faceapi from "face-api.js";
 import { loadFaceModels } from "../faceapi/faceapi";
 
-interface VisitorLoginModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (
-    name: string,
-    purpose: string,
-    gate: string,
-    id: string,
-    img: string,
-    descriptor: string
-  ) => void;
-}
-
 export default function VisitorLoginModal({
   isOpen,
   onClose,
   onSubmit,
-}: VisitorLoginModalProps) {
+}: any) {
   const [name, setName] = useState("");
   const [purpose, setPurpose] = useState("");
   const [idType, setIdType] = useState("");
@@ -31,12 +18,16 @@ export default function VisitorLoginModal({
   const [loading, setLoading] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
 
+  const [mode, setMode] = useState<"NEW" | "EXISTING">("NEW");
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const descriptorRef = useRef<number[] | null>(null);
+  const imageRef = useRef<string>("");
+
   const gate =
     typeof window !== "undefined"
       ? localStorage.getItem("gate") || "Main Gate"
       : "Main Gate";
-
-  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     loadFaceModels();
@@ -44,6 +35,7 @@ export default function VisitorLoginModal({
 
   if (!isOpen) return null;
 
+  // ---------------- CAMERA ----------------
   const startCamera = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: "user" },
@@ -68,16 +60,13 @@ export default function VisitorLoginModal({
     stream?.getTracks().forEach((t) => t.stop());
     setCameraReady(false);
   };
-  const [imageName, setImageName] = useState("");
-  const [descriptor, setDescriptor] = useState("");
+
+  // ---------------- FACE CAPTURE ----------------
   const getDescriptor = async () => {
     if (!videoRef.current) return null;
 
     const detection = await faceapi
-      .detectSingleFace(
-        videoRef.current,
-        new faceapi.TinyFaceDetectorOptions()
-      )
+      .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
       .withFaceLandmarks()
       .withFaceDescriptor();
 
@@ -86,7 +75,9 @@ export default function VisitorLoginModal({
     return Array.from(detection.descriptor);
   };
 
+  // ---------------- SCAN ----------------
   const captureAndCheck = async () => {
+    if (loading) return;
     setLoading(true);
 
     const descriptor = await getDescriptor();
@@ -96,84 +87,71 @@ export default function VisitorLoginModal({
       setLoading(false);
       return;
     }
-    setDescriptor(JSON.stringify(descriptor));
-    console.log("Descriptor:", descriptor);
-    try {
-      // 1. Capture image from video
-      const canvas = document.createElement("canvas");
-      const video = videoRef.current;
 
-      if (!video) return;
+    descriptorRef.current = descriptor;
 
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+    // take snapshot BEFORE stopping camera
+    const canvas = document.createElement("canvas");
+    const video = videoRef.current!;
 
-      const ctx = canvas.getContext("2d");
-      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
-      const blob: Blob = await new Promise((resolve) =>
-        canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.95)
-      );
+    const ctx = canvas.getContext("2d");
+    ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const file = new File([blob], `visitor_${Date.now()}.jpg`, {
-        type: "image/jpeg",
-      });
+    const blob = await new Promise<Blob>((resolve) =>
+      canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.95)
+    );
 
-      // 2. UPLOAD IMAGE FIRST
-      const formData = new FormData();
-      formData.append("file", file);
+    const file = new File([blob], `visitor_${Date.now()}.jpg`, {
+      type: "image/jpeg",
+    });
 
-      const uploadRes = await fetch("http://localhost:5432/upload", {
-        method: "POST",
-        body: formData,
-      });
+    const formData = new FormData();
+    formData.append("file", file);
 
-      const uploadData = await uploadRes.json();
-      setImageName(uploadData.fileName);
-      if (!uploadRes.ok) {
-        alert("Upload failed");
-        setLoading(false);
-        return;
-      }
+    const uploadRes = await fetch("http://localhost:5432/upload", {
+      method: "POST",
+      body: formData,
+    });
 
-      // 3. SEND DESCRIPTOR + IMAGE NAME
-      const res = await fetch("http://localhost:5432/check", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          descriptor,
-        }),
-      });
+    const uploadData = await uploadRes.json();
+    imageRef.current = uploadData.fileName;
 
-      const data = await res.json();
-      setLoading(false);
-      console.log("Check Response:", data);
-      if (data.match) {
-        alert(`Welcome back Visitor ${data.visitor.visitor_id}`);
+    // CHECK FACE
+    const res = await fetch("http://localhost:5432/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ descriptor }),
+    });
 
-        await onSubmit(
-          data.visitor.name,
-          "Auto Login",
-          gate,
-          String(data.visitor.visitor_id),
-          uploadData.fileName,
-          JSON.stringify(descriptor)
-        );
+    const data = await res.json();
 
-        stopCamera();
-        onClose();
-        return;
-      }
+    setLoading(false);
+    stopCamera();
+
+    // ---------------- EXISTING VISITOR ----------------
+    if (data.match) {
+      setMode("EXISTING");
+
+      setName(data.visitor.name || "Visitor");
 
       setStep("form");
-    } catch (err) {
-      console.error(err);
-      setLoading(false);
+      return;
     }
+
+    // ---------------- NEW VISITOR ----------------
+    setMode("NEW");
+    setName("");
+    setStep("form");
   };
+
+  // ---------------- SUBMIT ----------------
   const handleSubmit = async () => {
+    if (loading) return;
+    setLoading(true);
+
     const finalId = idType === "Other ID" ? otherId : idType;
 
     await onSubmit(
@@ -181,11 +159,12 @@ export default function VisitorLoginModal({
       purpose,
       gate,
       finalId,
-      imageName,
-      descriptor
+      imageRef.current,
+      JSON.stringify(descriptorRef.current),
+      mode
     );
 
-    stopCamera();
+    setLoading(false);
     onClose();
   };
 
@@ -202,7 +181,7 @@ export default function VisitorLoginModal({
           Visitor System
         </h2>
 
-        {/* CAMERA STEP */}
+        {/* SCAN */}
         {step === "scan" && (
           <>
             <video
@@ -222,6 +201,7 @@ export default function VisitorLoginModal({
             ) : (
               <button
                 onClick={captureAndCheck}
+                disabled={loading}
                 className="w-full mt-3 bg-green-600 text-white p-2"
               >
                 {loading ? "Scanning..." : "Scan Face"}
@@ -230,21 +210,23 @@ export default function VisitorLoginModal({
           </>
         )}
 
-        {/* FORM STEP */}
+        {/* FORM */}
         {step === "form" && (
           <div className="space-y-2 mt-3">
+
             <input
-              placeholder="Name"
               className="w-full border p-2"
               value={name}
+              disabled={mode === "EXISTING"}
               onChange={(e) => setName(e.target.value)}
+              placeholder="Name"
             />
 
             <input
-              placeholder="Purpose"
               className="w-full border p-2"
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
+              placeholder="Purpose"
             />
 
             <select
@@ -263,17 +245,18 @@ export default function VisitorLoginModal({
             {idType === "Other ID" && (
               <input
                 className="w-full border p-2"
-                placeholder="Specify ID"
                 value={otherId}
                 onChange={(e) => setOtherId(e.target.value)}
+                placeholder="Specify ID"
               />
             )}
 
             <button
               onClick={handleSubmit}
+              disabled={loading}
               className="w-full bg-green-600 text-white p-2"
             >
-              Register Visitor
+              {mode === "EXISTING" ? "Log Visitor" : "Register Visitor"}
             </button>
           </div>
         )}

@@ -4,8 +4,8 @@ import services from "@/services/services";
 export const visitorLogin = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ name, purpose, gate, id, image, descriptor }: { name: string; purpose: string; gate: string; id: string; image: string, descriptor: string }) =>
-      services.visitorLogin(name, purpose, gate, id, image, descriptor),
+    mutationFn: ({ name, purpose, gate, id, image, descriptor, mode }: { name: string; purpose: string; gate: string; id: string; image: string, descriptor: string, mode: "NEW" | "EXISTING" }) =>
+      services.visitorLogin(name, purpose, gate, id, image, descriptor, mode),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["visitors"] });
     },
