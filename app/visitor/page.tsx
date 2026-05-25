@@ -26,10 +26,11 @@ export default function VisitorPage() {
     gate: string,
     id: string,
     image: string,
-    descriptor: string
+    descriptor: string,
+    mode: "EXISTING" | "NEW"
   ) => {
     visitorLogin.mutate(
-      { name, purpose, gate, id, image, descriptor },
+      { name, purpose, gate, id, image, descriptor, mode },
       { onSuccess: () => setShowLoginForm(false) }
     );
   };

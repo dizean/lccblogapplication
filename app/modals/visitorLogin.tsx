@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import * as faceapi from "face-api.js";
 import { loadFaceModels } from "../faceapi/faceapi";
+import { Moderustic } from "next/font/google";
 
 interface VisitorLoginModalProps {
   isOpen: boolean;
@@ -13,7 +14,8 @@ interface VisitorLoginModalProps {
     gate: string,
     id: string,
     img: string,
-    descriptor: string
+    descriptor: string,
+    mode: "EXISTING" | "NEW"
   ) => void;
 }
 
@@ -30,11 +32,11 @@ export default function VisitorLoginModal({
   const [step, setStep] = useState<"scan" | "form">("scan");
   const [loading, setLoading] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
-
+  const [mode, setMode] = useState<"EXISTING" | "NEW">("EXISTING");
   const gate =
     typeof window !== "undefined"
-      ? localStorage.getItem("gate") || "Main Gate"
-      : "Main Gate";
+      ? localStorage.getItem("gate") || "Galo Gate"
+      : "Galo Gate";
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -97,7 +99,6 @@ export default function VisitorLoginModal({
       return;
     }
     setDescriptor(JSON.stringify(descriptor));
-    console.log("Descriptor:", descriptor);
     try {
       // 1. Capture image from video
       const canvas = document.createElement("canvas");
@@ -149,24 +150,9 @@ export default function VisitorLoginModal({
 
       const data = await res.json();
       setLoading(false);
-      console.log("Check Response:", data);
-      if (data.match) {
-        alert(`Welcome back Visitor ${data.visitor.visitor_id}`);
-
-        await onSubmit(
-          data.visitor.name,
-          "Auto Login",
-          gate,
-          String(data.visitor.visitor_id),
-          uploadData.fileName,
-          JSON.stringify(descriptor)
-        );
-
-        stopCamera();
-        onClose();
-        return;
-      }
-
+      setName(data.visitor?.name || "");
+      setMode(data.visitor ? "EXISTING" : "NEW");
+      stopCamera();
       setStep("form");
     } catch (err) {
       console.error(err);
@@ -182,7 +168,8 @@ export default function VisitorLoginModal({
       gate,
       finalId,
       imageName,
-      descriptor
+      descriptor,
+      mode
     );
 
     stopCamera();
