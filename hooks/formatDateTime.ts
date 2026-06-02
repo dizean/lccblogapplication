@@ -17,3 +17,18 @@ export const formatDate = (dateStr?: string | Date): string => {
     day: "numeric",
   });
 };
+export const formatDateTime = (date: Date) => {
+  return {
+    date: date.toLocaleDateString("en-US", {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    }),
+    time: date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }),
+  };
+};

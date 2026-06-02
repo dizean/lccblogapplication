@@ -1,10 +1,7 @@
 "use client";
-
 import { useRef, useState, useEffect } from "react";
 import * as faceapi from "face-api.js";
 import { loadFaceModels } from "../faceapi/faceapi";
-import { Moderustic } from "next/font/google";
-
 interface VisitorLoginModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -119,8 +116,6 @@ export default function VisitorLoginModal({
       const file = new File([blob], `visitor_${Date.now()}.jpg`, {
         type: "image/jpeg",
       });
-
-      // 2. UPLOAD IMAGE FIRST
       const formData = new FormData();
       formData.append("file", file);
 
@@ -136,8 +131,6 @@ export default function VisitorLoginModal({
         setLoading(false);
         return;
       }
-
-      // 3. SEND DESCRIPTOR + IMAGE NAME
       const res = await fetch("http://localhost:5432/check", {
         method: "POST",
         headers: {
@@ -184,12 +177,6 @@ export default function VisitorLoginModal({
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-xl bg-white p-5 rounded-xl">
-
-        <h2 className="text-center text-xl font-bold text-blue-700">
-          Visitor System
-        </h2>
-
-        {/* CAMERA STEP */}
         {step === "scan" && (
           <>
             <video
@@ -216,8 +203,6 @@ export default function VisitorLoginModal({
             )}
           </>
         )}
-
-        {/* FORM STEP */}
         {step === "form" && (
           <div className="space-y-2 mt-3">
             <input
@@ -226,14 +211,12 @@ export default function VisitorLoginModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
-
             <input
               placeholder="Purpose"
               className="w-full border p-2"
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
             />
-
             <select
               className="w-full border p-2"
               value={idType}
@@ -246,7 +229,6 @@ export default function VisitorLoginModal({
               <option>Student ID</option>
               <option>Other ID</option>
             </select>
-
             {idType === "Other ID" && (
               <input
                 className="w-full border p-2"
@@ -255,7 +237,6 @@ export default function VisitorLoginModal({
                 onChange={(e) => setOtherId(e.target.value)}
               />
             )}
-
             <button
               onClick={handleSubmit}
               className="w-full bg-green-600 text-white p-2"
@@ -264,11 +245,7 @@ export default function VisitorLoginModal({
             </button>
           </div>
         )}
-
-        <button
-          onClick={handleClose}
-          className="w-full mt-3 bg-gray-400 text-white p-2"
-        >
+        <button onClick={handleClose} className="w-full mt-3 bg-gray-400 text-white p-2">
           Close
         </button>
 

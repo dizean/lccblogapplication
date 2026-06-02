@@ -12,18 +12,14 @@ export default function Home() {
   const [endDate, setEndDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingCard, setLoadingCard] = useState<string | null>(null);
-
-  // GATE STATES
   const [selectedGate, setSelectedGate] = useState("");
   const [showDashboard, setShowDashboard] = useState(false);
-
   const gates = [
     "Rizal Gate",
     "Galo Gate",
     "St. Monica Gate"
   ];
 
-  // LOAD SAVED GATE
   useEffect(() => {
     const savedGate = localStorage.getItem("selectedGate");
 
@@ -32,8 +28,6 @@ export default function Home() {
       setShowDashboard(true);
     }
   }, []);
-
-  // SELECT GATE
   function handleSelectGate(gate: string) {
     localStorage.setItem("selectedGate", gate);
     setSelectedGate(gate);
@@ -113,27 +107,26 @@ export default function Home() {
   return (
     <div
       className="min-h-screen w-full flex flex-col bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: "url('/background.png')" }}
-    >
-      {/* DARK OVERLAY */}
+      style={{ backgroundImage: "url('/background.png')" }}>
       <div className="min-h-screen w-full flex flex-col bg-black/20 backdrop-blur-[2px]">
 
-        {/* HEADER */}
-        <header className="w-full flex justify-between items-center px-4 sm:px-6 md:px-10 py-4 bg-white/90 backdrop-blur shadow-md">
+        <header className="w-full flex justify-between items-center px-6 md:px-12 lg:px-16 py-2 bg-white/95 backdrop-blur shadow-lg">
+
           <img
             src="/lcc header.webp"
             alt="LCCB Logo"
-            className="h-12 sm:h-14 md:h-16 w-auto"
+            className="h-20 md:h-24 lg:h-20 w-auto"
           />
 
-          {/* CURRENT GATE */}
           {selectedGate && (
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:flex flex-col items-end">
-                <span className="text-xs text-gray-500">
+            <div className="flex items-center gap-6">
+
+              <div className="flex flex-col items-end">
+                <span className="text-lg md:text-xl text-gray-500 font-medium">
                   Selected Gate
                 </span>
-                <span className="font-semibold text-blue-700">
+
+                <span className="text-2xl md:text-3xl font-bold text-blue-700">
                   {selectedGate}
                 </span>
               </div>
@@ -144,38 +137,67 @@ export default function Home() {
                   setSelectedGate("");
                   setShowDashboard(false);
                 }}
-                className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm hover:bg-red-600 transition"
+                className="
+          px-6
+          py-3
+          md:px-8
+          md:py-4
+          rounded-xl
+          bg-red-500
+          text-white
+          text-lg
+          md:text-xl
+          font-semibold
+          hover:bg-red-600
+          shadow-md
+          transition-all
+          duration-300
+        "
               >
                 Change Gate
               </button>
+
             </div>
           )}
         </header>
-
-        {/* MAIN */}
         <main className="flex-1 flex items-center justify-center px-4 py-10">
-
-          {/* GATE SELECTION */}
           {!showDashboard ? (
-            <div className="w-full max-w-3xl bg-white/95 rounded-3xl shadow-2xl p-8 sm:p-10">
-
-              <div className="text-center mb-10">
-                <h1 className="text-3xl sm:text-4xl font-bold text-blue-700">
+            <div className="w-full max-w-7xl bg-white/95 rounded-3xl shadow-2xl p-8 md:p-12">
+              <div className="text-center mb-12">
+                <h1 className="text-4xl md:text-5xl font-bold text-blue-700">
                   Select Gate
                 </h1>
-
-                <p className="text-gray-500 mt-3">
+                <p className="text-gray-500 mt-4 text-lg">
                   Choose the gate before accessing the dashboard
                 </p>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 
                 {gates.map((gate, index) => (
                   <button
                     key={index}
                     onClick={() => handleSelectGate(gate)}
-                    className="h-32 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 text-white text-xl font-semibold shadow-lg hover:scale-[1.03] transition-all duration-300"
+                    className="
+          h-[220px]
+          rounded-3xl
+          bg-gradient-to-br
+          from-blue-600
+          to-blue-800
+          text-white
+          text-2xl
+          md:text-3xl
+          font-bold
+          shadow-xl
+          hover:scale-[1.03]
+          hover:shadow-2xl
+          transition-all
+          duration-300
+          flex
+          items-center
+          justify-center
+          text-center
+          px-6
+        "
                   >
                     {gate}
                   </button>
@@ -185,12 +207,8 @@ export default function Home() {
 
             </div>
           ) : (
-            // DASHBOARD
-            <div className="w-full max-w-6xl flex flex-col items-center gap-12">
-
-              {/* CARDS */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
-
+            <div className="w-full max-w-[1600px] flex flex-col items-center gap-12">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-10 w-full">
                 {[
                   {
                     title: "Employees DTR",
@@ -208,58 +226,53 @@ export default function Home() {
                     href: "/visitor",
                   },
                 ].map((item, i) => (
-                  <div key={i} className="w-full flex justify-center">
+                  <div key={i} className="w-full">
 
                     <Link
                       href={item.href}
                       onClick={() => setLoadingCard(item.href)}
-                      className="w-full max-w-md"
+                      className="block w-full"
                     >
+                      <div className="relative h-[400px] bg-white/95 rounded-3xl shadow-xl border-l-8 border-blue-600 p-10 flex flex-col justify-between hover:scale-[1.03] hover:shadow-2xl transition-all duration-300">
 
-                      <div className="relative h-80 bg-white/95 rounded-2xl shadow-lg border-l-4 border-blue-600 p-8 flex flex-col justify-between hover:scale-[1.03] transition">
-
-                        {/* LOADER */}
                         {loadingCard === item.href && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-2xl">
-                            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                          <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-3xl">
+                            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                           </div>
                         )}
 
                         <div>
-                          <h2 className="text-3xl font-bold text-blue-700">
+                          <h2 className="text-4xl font-bold text-blue-700">
                             {item.title}
                           </h2>
 
-                          <p className="text-gray-500 mt-3 text-lg">
+                          <p className="text-gray-500 mt-4 text-xl">
                             {item.desc}
                           </p>
                         </div>
 
-                        <div className="text-blue-600 font-semibold text-lg">
-                          Open →
+                        <div className="flex justify-end">
+                          <span className="text-blue-600 font-semibold text-2xl">
+                            Open →
+                          </span>
                         </div>
 
                       </div>
-
                     </Link>
 
                   </div>
                 ))}
 
               </div>
-
-              {/* EXPORT PANEL */}
               <div className="w-full max-w-4xl bg-white/95 rounded-2xl shadow-lg p-6">
 
                 <h2 className="text-xl font-semibold mb-5 text-gray-800">
                   Export Logs
                 </h2>
-
-                {/* DATE PICKERS */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                   <div>
-                    <label className="text-xs text-gray-500">
+                    <label className="text-lg text-gray-500">
                       Start Date
                     </label>
 
@@ -270,7 +283,7 @@ export default function Home() {
                   </div>
 
                   <div>
-                    <label className="text-xs text-gray-500">
+                    <label className="text-lg text-gray-500">
                       End Date
                     </label>
 
@@ -281,8 +294,6 @@ export default function Home() {
                   </div>
 
                 </div>
-
-                {/* BUTTONS */}
                 <div className="flex flex-col sm:flex-row gap-3 mt-5">
 
                   <button
@@ -312,13 +323,9 @@ export default function Home() {
                 </div>
 
               </div>
-
             </div>
           )}
-
         </main>
-
-        {/* FOOTER */}
         <footer className="text-center text-sm text-gray-700 py-4 bg-white/90 backdrop-blur border-t">
           © {new Date().getFullYear()} La Consolacion College Bacolod
         </footer>

@@ -57,10 +57,7 @@ export const KeysBorrowReturn = ({
 
   return (
     <div className="w-full flex flex-col gap-6">
-
-      {/* SEARCH + ACTIONS */}
       <div className="flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-4">
-
         <input
           type="text"
           placeholder="Search room..."
@@ -68,16 +65,13 @@ export const KeysBorrowReturn = ({
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full xl:w-[45%] px-6 py-4 text-lg rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0441B1]"
         />
-
         <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
-
           <button
             onClick={onAddKey}
             className="px-6 py-4 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition shadow-md w-full sm:w-[180px]"
           >
             + Add Room
           </button>
-
           <button
             onClick={onShowLogs}
             className="px-6 py-4 bg-[#0441B1] text-white font-semibold rounded-xl hover:bg-blue-900 transition shadow-md w-full sm:w-[180px]"
@@ -87,24 +81,17 @@ export const KeysBorrowReturn = ({
 
         </div>
       </div>
-
-      {/* TABLE */}
       <div className="overflow-x-auto rounded-xl border shadow-sm max-h-[70vh]">
-
         <table className="w-full border-collapse">
-
           <thead className="sticky top-0 bg-[#0441B1] text-white text-xl z-10">
             <tr>
               <th className="p-5 text-left">Room</th>
-              <th className="p-5 text-left">Date</th>
               <th className="p-5 text-left">Borrowed By</th>
               <th className="p-5 text-left">Time Borrowed</th>
               <th className="p-5 text-center">Action</th>
             </tr>
           </thead>
-
           <tbody>
-
             {filteredKeys.length > 0 ? (
               filteredKeys.map((key: any) => (
                 <tr
@@ -112,13 +99,6 @@ export const KeysBorrowReturn = ({
                   className="border-b hover:bg-gray-50 transition text-lg"
                 >
                   <td className="p-5 font-semibold">{key.room}</td>
-
-                  <td className="p-5">
-                    {key.logDate
-                      ? formatDate(key.logDate)
-                      : formatDate(new Date())}
-                  </td>
-
                   <td className="p-5">
                     {key.borrowedByName || "----"}
                   </td>
@@ -128,7 +108,6 @@ export const KeysBorrowReturn = ({
                       ? formatTime(key.timeBorrowed)
                       : "----"}
                   </td>
-
                   <td className="p-5 text-center">
 
                     {!key.borrowedByName ? (
@@ -152,7 +131,6 @@ export const KeysBorrowReturn = ({
                         Return
                       </button>
                     )}
-
                   </td>
                 </tr>
               ))
@@ -166,18 +144,12 @@ export const KeysBorrowReturn = ({
                 </td>
               </tr>
             )}
-
           </tbody>
-
         </table>
       </div>
-
-      {/* MODAL */}
       {actionType && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-
           <div className="w-full max-w-5xl">
-
             <EmployeesList
               onSelect={(employeeId) => {
                 if (selectedKeyId) {
@@ -189,9 +161,7 @@ export const KeysBorrowReturn = ({
                 setSelectedKeyId(null);
               }}
             />
-
           </div>
-
         </div>
       )}
     </div>

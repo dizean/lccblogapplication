@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { formatDate, formatTime } from "@/hooks/formatDateTime";
+import { formatDate, formatDateTime, formatTime } from "@/hooks/formatDateTime";
 import VisitorLoginModal from "../modals/visitorLogin";
 import { hooks } from "@/hooks/hooks";
 import DatePicker from "../component/DatePicker";
@@ -14,7 +14,6 @@ export default function VisitorPage() {
     new Date().toISOString().split("T")[0]
   );
   const [showAll, setShowAll] = useState(false);
-  // MODALS
   const [selectedLog, setSelectedLog] = useState<any>(null);
 
   const { data: logs = [], isLoading, error } = hooks.visitors();
@@ -52,70 +51,88 @@ export default function VisitorPage() {
 
     return matchesName && matchesDate;
   });
-
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const savedGate = localStorage.getItem("selectedGate");
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+  const { date: formattedDate, time: formattedTime } = formatDateTime(currentTime);
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-100 overflow-hidden">
 
-      {/* HEADER */}
-      <header className="w-full flex flex-col md:flex-row justify-between items-center gap-4 px-4 sm:px-6 md:px-10 py-4 bg-white shadow-md">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#0441B1] text-center md:text-left">
-          Visitor`s Log
-        </h1>
+     <header className="w-full bg-white shadow-md px-4 sm:px-6 md:px-10 py-4">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#0441B1] text-center md:text-left">
+            Visitor Logs
+          </h1>
 
-        <Link
-          href="/"
-          className="w-full md:w-auto text-center px-5 py-2 sm:px-6 sm:py-3 text-sm sm:text-lg bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-900 transition-all"
-        >
-          ← Back to Home
-        </Link>
+          <div className="flex flex-col items-center text-center gap-1">
+            {savedGate && (
+              <div className="text-base sm:text-lg md:text-xl font-bold text-gray-800">
+                <span className="text-[#0441B1]">{savedGate}</span>
+              </div>
+            )}
+            <div className="text-sm sm:text-base md:text-lg text-gray-600 font-medium">
+              {formattedDate}
+            </div>
+            <div className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#0441B1]">
+              {formattedTime}
+            </div>
+          </div>
+
+          <Link
+            href="/"
+            className="w-full md:w-auto text-center px-6 py-3 sm:px-7 sm:py-3 text-sm sm:text-lg bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-900 transition-all shadow-md"
+          >
+            ← Back to Home
+          </Link>
+        </div>
       </header>
 
       <main className="flex-1 w-full overflow-hidden">
         <div className="h-full w-full flex flex-col p-2 sm:p-4 md:p-6">
           <div className="w-full flex flex-col gap-6">
-
-            {/* FILTER BAR */}
-            <div className="w-full flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4">
-
+            <div className="w-full flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6">
               <input
                 type="text"
                 placeholder="Search visitor name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full xl:w-[40%] px-6 py-4 text-lg rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0441B1]"
+                className="w-full lg:flex-1 px-6 py-4 text-lg rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0441B1]"
               />
-
-              <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto justify-end">
-
+              <div className="flex flex-col sm:flex-row lg:flex-row gap-4 w-full lg:w-auto">
                 {!showAll && (
                   <DatePicker
                     value={selectedDate}
                     onChange={setSelectedDate}
-                    className="w-full"
+                    className="w-full sm:w-[200px]"
                   />
                 )}
-
                 <button
                   onClick={() => setShowAll(!showAll)}
-                  className={`px-6 py-4 rounded-xl font-semibold transition shadow-md w-full sm:w-[180px]
-                  ${showAll
+                  className={`
+        w-full sm:w-[200px]
+        px-6 py-4 rounded-xl font-semibold transition shadow-md
+        ${showAll
                       ? "bg-yellow-700 text-white hover:bg-yellow-600"
                       : "bg-yellow-500 text-white hover:bg-yellow-400"
-                    }`}
+                    }
+      `}
                 >
                   {showAll ? "Filter by Date" : "Show All"}
                 </button>
 
                 <button
                   onClick={() => setShowLoginForm(true)}
-                  className="px-6 py-4 rounded-xl bg-[#0441B1] text-white font-semibold hover:bg-blue-900 transition shadow-md w-full sm:w-[180px]"
+                  className="w-full sm:w-[200px] px-6 py-4 rounded-xl bg-[#0441B1] text-white font-semibold hover:bg-blue-900 transition shadow-md"
                 >
                   Check In
                 </button>
               </div>
             </div>
-
-            {/* TABLE */}
             <div className="overflow-x-auto rounded-xl max-h-[70vh] border shadow-sm">
 
               {isLoading ? (
@@ -196,8 +213,6 @@ export default function VisitorPage() {
           </div>
         </div>
       </main>
-
-      {/* CHECK-IN MODAL */}
       {showLoginForm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
           <div className="w-full max-w-lg">
@@ -210,46 +225,35 @@ export default function VisitorPage() {
         </div>
       )}
 
-      {/* DETAILS MODAL */}
       {selectedLog && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
-
           <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6 relative">
-
-            {/* CLOSE */}
             <button
               onClick={() => setSelectedLog(null)}
               className="absolute top-3 right-3 text-gray-600 hover:text-black text-2xl"
             >
               ✕
             </button>
-
             <h2 className="text-2xl font-bold text-[#0441B1] mb-4">
-              Visitor Details
+              Visit Details
             </h2>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-lg">
-
               <div>
                 <p className="font-semibold">Name</p>
                 <p>{selectedLog.name}</p>
               </div>
-
               <div>
                 <p className="font-semibold">Purpose</p>
                 <p>{selectedLog.purpose}</p>
               </div>
-
               <div>
                 <p className="font-semibold">Date</p>
                 <p>{formatDate(selectedLog.date)}</p>
               </div>
-
               <div>
                 <p className="font-semibold">Time In</p>
                 <p>{formatTime(selectedLog.logged_in)}</p>
               </div>
-
               <div>
                 <p className="font-semibold">Time Out</p>
                 <p>
@@ -258,21 +262,16 @@ export default function VisitorPage() {
                     : "Still inside"}
                 </p>
               </div>
-
               <div>
                 <p className="font-semibold">ID Type</p>
-                <p>{selectedLog.id}</p>
+                <p>{selectedLog.id_type}</p>
               </div>
-
             </div>
-
-            {/* IMAGE */}
             <div className="mt-6">
               <p className="font-semibold mb-2">Captured Image</p>
-
-              {selectedLog.img ? (
+              {selectedLog.img_path ? (
                 <img
-                  src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${selectedLog.img}`}
+                  src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${selectedLog.img_path}`}
                   className="w-full max-h-[400px] object-cover rounded-xl border"
                   alt="visitor"
                 />
@@ -280,11 +279,9 @@ export default function VisitorPage() {
                 <p className="text-gray-500">No image available</p>
               )}
             </div>
-
           </div>
         </div>
       )}
-
     </div>
   );
 }
