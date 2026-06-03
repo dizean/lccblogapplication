@@ -15,7 +15,7 @@ export default function VisitorPage() {
   );
   const [showAll, setShowAll] = useState(false);
   const [selectedLog, setSelectedLog] = useState<any>(null);
-
+  const [showPolicy, setShowPolicy] = useState(false);
   const { data: logs = [], isLoading, error } = hooks.visitors();
   const visitorLogin = hooks.visitorLogin();
   const visitorLogout = hooks.visitorLogout();
@@ -63,7 +63,7 @@ export default function VisitorPage() {
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-100 overflow-hidden">
 
-     <header className="w-full bg-white shadow-md px-4 sm:px-6 md:px-10 py-4">
+      <header className="w-full bg-white shadow-md px-4 sm:px-6 md:px-10 py-4">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#0441B1] text-center md:text-left">
             Visitor Logs
@@ -113,20 +113,13 @@ export default function VisitorPage() {
                 )}
                 <button
                   onClick={() => setShowAll(!showAll)}
-                  className={`
-        w-full sm:w-[200px]
-        px-6 py-4 rounded-xl font-semibold transition shadow-md
-        ${showAll
-                      ? "bg-yellow-700 text-white hover:bg-yellow-600"
-                      : "bg-yellow-500 text-white hover:bg-yellow-400"
-                    }
-      `}
-                >
+                  className={`w-full sm:w-[200px] px-6 py-4 rounded-xl font-semibold transition shadow-md
+                  ${showAll ? "bg-yellow-700 text-white hover:bg-yellow-600" : "bg-yellow-500 text-white hover:bg-yellow-400"}
+                  `}>
                   {showAll ? "Filter by Date" : "Show All"}
                 </button>
-
                 <button
-                  onClick={() => setShowLoginForm(true)}
+                  onClick={() => setShowPolicy(true)}
                   className="w-full sm:w-[200px] px-6 py-4 rounded-xl bg-[#0441B1] text-white font-semibold hover:bg-blue-900 transition shadow-md"
                 >
                   Check In
@@ -213,6 +206,51 @@ export default function VisitorPage() {
           </div>
         </div>
       </main>
+      {showPolicy && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6 md:p-8">
+
+            <h1 className="text-xl md:text-2xl font-bold text-[#0441B1] text-center mb-4">
+              Visitor Data Privacy Notice
+            </h1>
+
+            <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-4">
+              This system captures facial images and biometric descriptors for security,
+              identity verification, and visitor logging purposes.
+            </p>
+
+            <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-4">
+              Data may be used for monitoring, auditing, and security investigations if required.
+              All data is stored securely and is not shared with unauthorized parties.
+            </p>
+
+            <p className="text-sm md:text-base font-semibold text-red-600 mb-6">
+              By continuing, you consent to the capture and processing of your facial data.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+
+              <button
+                onClick={() => {
+                  setShowPolicy(false);
+                  setShowLoginForm(true);
+                }}
+                className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition"
+              >
+                I Agree & Continue
+              </button>
+
+              <button
+                onClick={() => setShowPolicy(false)}
+                className="w-full bg-gray-500 text-white py-3 rounded-xl font-semibold hover:bg-gray-600 transition"
+              >
+                Cancel
+              </button>
+
+            </div>
+          </div>
+        </div>
+      )}
       {showLoginForm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
           <div className="w-full max-w-lg">
@@ -224,7 +262,6 @@ export default function VisitorPage() {
           </div>
         </div>
       )}
-
       {selectedLog && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
           <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6 relative">

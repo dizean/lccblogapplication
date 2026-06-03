@@ -1,7 +1,9 @@
 "use client";
+
 import { useRef, useState, useEffect } from "react";
 import * as faceapi from "face-api.js";
 import { loadFaceModels } from "../faceapi/faceapi";
+
 interface VisitorLoginModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -30,16 +32,35 @@ export default function VisitorLoginModal({
   const [loading, setLoading] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [mode, setMode] = useState<"EXISTING" | "NEW">("EXISTING");
+
+  const [faceStatus, setFaceStatus] = useState("Initializing camera...");
+  const [faceOk, setFaceOk] = useState(false);
+  const [countdown, setCountdown] = useState(5);
+
   const gate =
     typeof window !== "undefined"
       ? localStorage.getItem("gate") || "Galo Gate"
       : "Galo Gate";
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [imageName, setImageName] = useState("");
+  const [descriptor, setDescriptor] = useState("");
 
   useEffect(() => {
     loadFaceModels();
   }, []);
+
+  // AUTO START CAMERA WHEN OPENED
+  useEffect(() => {
+    if (isOpen) {
+      startCamera();
+    } else {
+      stopAll();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -59,24 +80,91 @@ export default function VisitorLoginModal({
           resolve(true);
         };
       });
+
+      startDetection();
+      startCountdown();
     }
   };
 
-  const stopCamera = () => {
+  const startDetection = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    intervalRef.current = setInterval(async () => {
+      const detection = await faceapi
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks();
+
+      if (!detection) {
+        setFaceStatus("No face detected");
+        setFaceOk(false);
+        setCountdown(5);
+        return;
+      }
+
+      const box = detection.detection.box;
+
+      const videoArea = video.videoWidth * video.videoHeight;
+      const faceArea = box.width * box.height;
+
+      const ratio = faceArea / videoArea;
+
+      if (ratio < 0.08) {
+        setFaceStatus("Move closer");
+        setFaceOk(false);
+        setCountdown(5);
+      } else if (ratio > 0.35) {
+        setFaceStatus("Move back");
+        setFaceOk(false);
+        setCountdown(5);
+      } else {
+        setFaceStatus("Face detected");
+        setFaceOk(true);
+      }
+    }, 300);
+  };
+
+  const startCountdown = () => {
+    if (countdownRef.current) return;
+
+    setCountdown(5);
+
+    countdownRef.current = setInterval(() => {
+      if (!faceOk || loading) {
+        setCountdown(5);
+        return;
+      }
+
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          captureAndCheck();
+          return 5;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const stopAll = () => {
     const stream = videoRef.current?.srcObject as MediaStream;
     stream?.getTracks().forEach((t) => t.stop());
+
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+
+    intervalRef.current = null;
+    countdownRef.current = null;
+
     setCameraReady(false);
+    setFaceOk(false);
+    setCountdown(5);
   };
-  const [imageName, setImageName] = useState("");
-  const [descriptor, setDescriptor] = useState("");
+
   const getDescriptor = async () => {
     if (!videoRef.current) return null;
 
     const detection = await faceapi
-      .detectSingleFace(
-        videoRef.current,
-        new faceapi.TinyFaceDetectorOptions()
-      )
+      .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
       .withFaceLandmarks()
       .withFaceDescriptor();
 
@@ -86,18 +174,20 @@ export default function VisitorLoginModal({
   };
 
   const captureAndCheck = async () => {
+    if (!faceOk || loading) return;
+
     setLoading(true);
 
-    const descriptor = await getDescriptor();
+    const desc = await getDescriptor();
 
-    if (!descriptor) {
-      alert("No face detected");
+    if (!desc) {
       setLoading(false);
       return;
     }
-    setDescriptor(JSON.stringify(descriptor));
+
+    setDescriptor(JSON.stringify(desc));
+
     try {
-      // 1. Capture image from video
       const canvas = document.createElement("canvas");
       const video = videoRef.current;
 
@@ -116,6 +206,7 @@ export default function VisitorLoginModal({
       const file = new File([blob], `visitor_${Date.now()}.jpg`, {
         type: "image/jpeg",
       });
+
       const formData = new FormData();
       formData.append("file", file);
 
@@ -126,32 +217,27 @@ export default function VisitorLoginModal({
 
       const uploadData = await uploadRes.json();
       setImageName(uploadData.fileName);
-      if (!uploadRes.ok) {
-        alert("Upload failed");
-        setLoading(false);
-        return;
-      }
+
       const res = await fetch("http://localhost:5432/check", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          descriptor,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ descriptor: desc }),
       });
 
       const data = await res.json();
-      setLoading(false);
+
       setName(data.visitor?.name || "");
       setMode(data.visitor ? "EXISTING" : "NEW");
-      stopCamera();
+
+      stopAll();
       setStep("form");
+      setLoading(false);
     } catch (err) {
       console.error(err);
       setLoading(false);
     }
   };
+
   const handleSubmit = async () => {
     const finalId = idType === "Other ID" ? otherId : idType;
 
@@ -165,18 +251,19 @@ export default function VisitorLoginModal({
       mode
     );
 
-    stopCamera();
+    stopAll();
     onClose();
   };
 
   const handleClose = () => {
-    stopCamera();
+    stopAll();
     onClose();
   };
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-xl bg-white p-5 rounded-xl">
+
         {step === "scan" && (
           <>
             <video
@@ -186,37 +273,32 @@ export default function VisitorLoginModal({
               className="w-full mt-3 rounded bg-black"
             />
 
-            {!cameraReady ? (
-              <button
-                onClick={startCamera}
-                className="w-full mt-3 bg-blue-600 text-white p-2"
-              >
-                Start Camera
-              </button>
-            ) : (
-              <button
-                onClick={captureAndCheck}
-                className="w-full mt-3 bg-green-600 text-white p-2"
-              >
-                {loading ? "Scanning..." : "Scan Face"}
-              </button>
-            )}
+            <p className="text-center text-sm mt-2 font-medium text-gray-700">
+              {faceStatus}
+            </p>
+
+            <div className="text-center mt-2 text-lg font-bold text-[#0441B1]">
+              Auto Capture in: {countdown}s
+            </div>
           </>
         )}
+
         {step === "form" && (
           <div className="space-y-2 mt-3">
             <input
-              placeholder="Name"
               className="w-full border p-2"
+              placeholder="Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
+
             <input
-              placeholder="Purpose"
               className="w-full border p-2"
+              placeholder="Purpose"
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
             />
+
             <select
               className="w-full border p-2"
               value={idType}
@@ -229,6 +311,7 @@ export default function VisitorLoginModal({
               <option>Student ID</option>
               <option>Other ID</option>
             </select>
+
             {idType === "Other ID" && (
               <input
                 className="w-full border p-2"
@@ -237,6 +320,7 @@ export default function VisitorLoginModal({
                 onChange={(e) => setOtherId(e.target.value)}
               />
             )}
+
             <button
               onClick={handleSubmit}
               className="w-full bg-green-600 text-white p-2"
@@ -245,7 +329,11 @@ export default function VisitorLoginModal({
             </button>
           </div>
         )}
-        <button onClick={handleClose} className="w-full mt-3 bg-gray-400 text-white p-2">
+
+        <button
+          onClick={handleClose}
+          className="w-full mt-3 bg-gray-400 text-white p-2"
+        >
           Close
         </button>
 

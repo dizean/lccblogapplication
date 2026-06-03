@@ -19,7 +19,7 @@ export default function Home() {
     "Galo Gate",
     "St. Monica Gate"
   ];
-
+  
   useEffect(() => {
     const savedGate = localStorage.getItem("selectedGate");
 
