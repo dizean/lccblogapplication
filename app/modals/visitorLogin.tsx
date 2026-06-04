@@ -36,7 +36,6 @@ export default function VisitorLoginModal({
   const [faceStatus, setFaceStatus] = useState("Initializing camera...");
   const [faceOk, setFaceOk] = useState(false);
   const [countdown, setCountdown] = useState(5);
-
   const gate =
     typeof window !== "undefined"
       ? localStorage.getItem("gate") || "Galo Gate"
@@ -46,14 +45,19 @@ export default function VisitorLoginModal({
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
+  const faceOkRef = useRef(false);
+  const capturingRef = useRef(false);
+  const loadingRef = useRef(false);
+
   const [imageName, setImageName] = useState("");
   const [descriptor, setDescriptor] = useState("");
 
   useEffect(() => {
     loadFaceModels();
   }, []);
-
-  // AUTO START CAMERA WHEN OPENED
+  useEffect(() => {
+    loadingRef.current = loading;
+  }, [loading]);
   useEffect(() => {
     if (isOpen) {
       startCamera();
@@ -86,40 +90,54 @@ export default function VisitorLoginModal({
     }
   };
 
-  const startDetection = async () => {
+  const startDetection = () => {
     const video = videoRef.current;
     if (!video) return;
 
     intervalRef.current = setInterval(async () => {
-      const detection = await faceapi
-        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-        .withFaceLandmarks();
+      try {
+        const detection = await faceapi
+          .detectSingleFace(
+            video,
+            new faceapi.TinyFaceDetectorOptions()
+          )
+          .withFaceLandmarks();
 
-      if (!detection) {
-        setFaceStatus("No face detected");
-        setFaceOk(false);
-        setCountdown(5);
-        return;
-      }
+        if (!detection) {
+          setFaceStatus("No face detected");
+          setFaceOk(false);
+          faceOkRef.current = false;
+          setCountdown(5);
+          return;
+        }
 
-      const box = detection.detection.box;
+        const box = detection.detection.box;
 
-      const videoArea = video.videoWidth * video.videoHeight;
-      const faceArea = box.width * box.height;
+        const videoArea =
+          video.videoWidth * video.videoHeight;
 
-      const ratio = faceArea / videoArea;
+        const faceArea =
+          box.width * box.height;
 
-      if (ratio < 0.08) {
-        setFaceStatus("Move closer");
-        setFaceOk(false);
-        setCountdown(5);
-      } else if (ratio > 0.35) {
-        setFaceStatus("Move back");
-        setFaceOk(false);
-        setCountdown(5);
-      } else {
-        setFaceStatus("Face detected");
-        setFaceOk(true);
+        const ratio = faceArea / videoArea;
+
+        if (ratio < 0.08) {
+          setFaceStatus("Move closer");
+          setFaceOk(false);
+          faceOkRef.current = false;
+          setCountdown(5);
+        } else if (ratio > 0.35) {
+          setFaceStatus("Move back");
+          setFaceOk(false);
+          faceOkRef.current = false;
+          setCountdown(5);
+        } else {
+          setFaceStatus("Face detected");
+          setFaceOk(true);
+          faceOkRef.current = true;
+        }
+      } catch (err) {
+        console.error(err);
       }
     }, 300);
   };
@@ -130,7 +148,11 @@ export default function VisitorLoginModal({
     setCountdown(5);
 
     countdownRef.current = setInterval(() => {
-      if (!faceOk || loading) {
+      if (
+        !faceOkRef.current ||
+        loadingRef.current ||
+        capturingRef.current
+      ) {
         setCountdown(5);
         return;
       }
@@ -140,20 +162,30 @@ export default function VisitorLoginModal({
           captureAndCheck();
           return 5;
         }
+
         return prev - 1;
       });
     }, 1000);
   };
 
   const stopAll = () => {
-    const stream = videoRef.current?.srcObject as MediaStream;
-    stream?.getTracks().forEach((t) => t.stop());
+    const stream =
+      videoRef.current?.srcObject as MediaStream | null;
 
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    if (countdownRef.current) clearInterval(countdownRef.current);
+    stream?.getTracks().forEach((track) => track.stop());
 
-    intervalRef.current = null;
-    countdownRef.current = null;
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+
+    faceOkRef.current = false;
+    capturingRef.current = false;
 
     setCameraReady(false);
     setFaceOk(false);
@@ -174,66 +206,99 @@ export default function VisitorLoginModal({
   };
 
   const captureAndCheck = async () => {
-    if (!faceOk || loading) return;
+    if (capturingRef.current) return;
 
+    capturingRef.current = true;
     setLoading(true);
 
-    const desc = await getDescriptor();
-
-    if (!desc) {
-      setLoading(false);
-      return;
-    }
-
-    setDescriptor(JSON.stringify(desc));
-
     try {
-      const canvas = document.createElement("canvas");
+      const desc = await getDescriptor();
+
+      if (!desc) {
+        return;
+      }
+
+      setDescriptor(JSON.stringify(desc));
+
       const video = videoRef.current;
 
       if (!video) return;
+
+      const canvas = document.createElement("canvas");
 
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
       const ctx = canvas.getContext("2d");
-      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const blob: Blob = await new Promise((resolve) =>
-        canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.95)
+      ctx?.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
       );
 
-      const file = new File([blob], `visitor_${Date.now()}.jpg`, {
-        type: "image/jpeg",
-      });
+      const blob: Blob = await new Promise((resolve) =>
+        canvas.toBlob(
+          (b) => resolve(b!),
+          "image/jpeg",
+          0.95
+        )
+      );
+
+      const file = new File(
+        [blob],
+        `visitor_${Date.now()}.jpg`,
+        {
+          type: "image/jpeg",
+        }
+      );
 
       const formData = new FormData();
       formData.append("file", file);
 
-      const uploadRes = await fetch("http://localhost:5432/upload", {
-        method: "POST",
-        body: formData,
-      });
+      const uploadRes = await fetch(
+        "http://localhost:5432/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       const uploadData = await uploadRes.json();
+
       setImageName(uploadData.fileName);
 
-      const res = await fetch("http://localhost:5432/check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ descriptor: desc }),
-      });
+      const res = await fetch(
+        "http://localhost:5432/check",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            descriptor: desc,
+          }),
+        }
+      );
 
       const data = await res.json();
 
       setName(data.visitor?.name || "");
-      setMode(data.visitor ? "EXISTING" : "NEW");
+
+      setMode(
+        data.visitor
+          ? "EXISTING"
+          : "NEW"
+      );
 
       stopAll();
       setStep("form");
-      setLoading(false);
     } catch (err) {
       console.error(err);
+    } finally {
+      capturingRef.current = false;
       setLoading(false);
     }
   };
@@ -276,9 +341,8 @@ export default function VisitorLoginModal({
             <p className="text-center text-sm mt-2 font-medium text-gray-700">
               {faceStatus}
             </p>
-
-            <div className="text-center mt-2 text-lg font-bold text-[#0441B1]">
-              Auto Capture in: {countdown}s
+            <div className="text-center text-red-500 font-bold">
+              Face: {faceOk ? "YES" : "NO"} | Count: {countdown}
             </div>
           </>
         )}
