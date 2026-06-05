@@ -10,6 +10,7 @@ import service from "@/services/services";
 import PrivacyNoticeModal from "./policy";
 import VisitDetailsModal from "./details";
 import ExportLogsCard from "../component/DownloadLogs";
+import * as XLSX from "xlsx";
 export default function VisitorPage() {
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -88,6 +89,27 @@ export default function VisitorPage() {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const exportToExcel = () => {
+    const excelData = filteredLogs.map((log: any) => ({
+      Name: log.name,
+      Purpose: log.purpose,
+      Date: log.date ? formatDate(log.date) : "-",
+      "Time In": log.logged_in ? formatTime(log.logged_in) : "-",
+      "Time Out": log.logged_out ? formatTime(log.logged_out) : "----",
+      Status: log.logged_out ? "Logged Out" : "Logged In",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Visitor Logs");
+
+    XLSX.writeFile(
+      workbook,
+      `visitor_${excelData[0]?.Name || 'Unknown'}_logs_${new Date().toISOString().split("T")[0]}.xlsx`
+    );
+  };
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-100 overflow-hidden">
 
@@ -172,6 +194,7 @@ export default function VisitorPage() {
                 <table className="w-full border-collapse text-left">
                   <thead className="sticky top-0 bg-[#0441B1] text-white text-xl z-10">
                     <tr>
+                      <th className="p-8">Image</th>
                       <th className="p-8">Name</th>
                       <th className="p-8">Purpose</th>
                       <th className="p-8">Date</th>
@@ -193,6 +216,13 @@ export default function VisitorPage() {
                             onClick={() => setSelectedLog(log)}
                             className="border-b hover:bg-gray-50 transition text-lg cursor-pointer text-left"
                           >
+                            <td className="p-8 font-semibold">
+                              <img
+                                src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${log.img_path}`}
+                                className="w-[100px] max-h-[100px] object-cover rounded-xl border"
+                                alt="visitor"
+                              />
+                            </td>
                             <td className="p-8 font-semibold">{log.name}</td>
 
                             <td className="p-8">{log.purpose}</td>
@@ -236,6 +266,14 @@ export default function VisitorPage() {
                   </tbody>
                 </table>
               )}
+            </div>
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={exportToExcel}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+              >
+                Download Excel
+              </button>
             </div>
           </div>
         </div>
