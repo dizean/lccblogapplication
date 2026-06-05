@@ -48,7 +48,7 @@ export default function VisitorLoginModal({
   const faceOkRef = useRef(false);
   const capturingRef = useRef(false);
   const loadingRef = useRef(false);
-
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [imageName, setImageName] = useState("");
   const [descriptor, setDescriptor] = useState("");
 
@@ -67,41 +67,66 @@ export default function VisitorLoginModal({
   }, [isOpen]);
 
   if (!isOpen) return null;
-
-  const startCamera = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "user" },
-      audio: false,
-    });
-
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-
-      await new Promise((resolve) => {
-        videoRef.current!.onloadedmetadata = async () => {
-          await videoRef.current!.play();
-          setCameraReady(true);
-          resolve(true);
-        };
-      });
-
-      startDetection();
-      startCountdown();
-    }
+const setupCanvas = (
+  video: HTMLVideoElement,
+  canvas: HTMLCanvasElement
+) => {
+  const displaySize = {
+    width: video.videoWidth,
+    height: video.videoHeight,
   };
+
+  canvas.width = displaySize.width;
+  canvas.height = displaySize.height;
+
+  faceapi.matchDimensions(canvas, displaySize);
+};
+const startCamera = async () => {
+  const video = videoRef.current;
+  const canvas = canvasRef.current;
+
+  if (!video || !canvas) return;
+
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "user" },
+    audio: false,
+  });
+
+  video.srcObject = stream;
+
+  await new Promise((resolve) => {
+    video.onloadedmetadata = async () => {
+      await video.play();
+
+      setCameraReady(true);
+
+      // ⚠️ use local refs (NOT videoRef.current)
+      setupCanvas(video, canvas);
+
+      resolve(true);
+    };
+  });
+
+  startDetection();
+  startCountdown();
+};
 
   const startDetection = () => {
     const video = videoRef.current;
-    if (!video) return;
+    const canvas = canvasRef.current;
+
+    if (!video || !canvas) return;
+
+    const ctx = canvas.getContext("2d");
 
     intervalRef.current = setInterval(async () => {
       try {
         const detection = await faceapi
-          .detectSingleFace(
-            video,
-            new faceapi.TinyFaceDetectorOptions()
-          )
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
           .withFaceLandmarks();
+
+        // clear overlay
+        ctx?.clearRect(0, 0, canvas.width, canvas.height);
 
         if (!detection) {
           setFaceStatus("No face detected");
@@ -111,14 +136,20 @@ export default function VisitorLoginModal({
           return;
         }
 
+        // draw overlay (box + landmarks)
+        const resized = faceapi.resizeResults(detection, {
+          width: canvas.width,
+          height: canvas.height,
+        });
+
+        faceapi.draw.drawDetections(canvas, resized);
+        faceapi.draw.drawFaceLandmarks(canvas, resized);
+
+        // BOX LOGIC (UNCHANGED)
         const box = detection.detection.box;
 
-        const videoArea =
-          video.videoWidth * video.videoHeight;
-
-        const faceArea =
-          box.width * box.height;
-
+        const videoArea = video.videoWidth * video.videoHeight;
+        const faceArea = box.width * box.height;
         const ratio = faceArea / videoArea;
 
         if (ratio < 0.08) {
@@ -328,17 +359,24 @@ export default function VisitorLoginModal({
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-xl bg-white p-5 rounded-xl">
-      <h1 className="text-3xl font-bold text-center">
+        <h1 className="text-3xl font-bold text-center">
           {step === "scan" ? "Scan Your Face" : mode === "EXISTING" ? `Welcome Back, ${name}!` : "New Visitor"}
         </h1>
         {step === "scan" && (
           <>
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              className="w-full mt-3 rounded bg-black"
-            />
+            <div className="relative w-full mt-3">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                className="w-full rounded bg-black"
+              />
+
+              <canvas
+                ref={canvasRef}
+                className="absolute top-0 left-0 w-full h-full"
+              />
+            </div>
 
             <p className="text-center text-xl mt-2 font-medium text-gray-700">
               {faceStatus}
