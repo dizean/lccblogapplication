@@ -180,8 +180,9 @@ export default function VisitorLoginModal({
         <h2 className="text-center text-xl font-bold text-blue-700">
           Visitor System
         </h2>
-
-        {/* SCAN */}
+        <h1>
+          {step === "scan" ? "Scan Your Face" : mode === "EXISTING" ? "Welcome Back!" : "New Visitor"}
+        </h1>
         {step === "scan" && (
           <>
             <video

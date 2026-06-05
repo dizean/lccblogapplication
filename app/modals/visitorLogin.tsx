@@ -328,7 +328,9 @@ export default function VisitorLoginModal({
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-xl bg-white p-5 rounded-xl">
-
+      <h1 className="text-3xl font-bold text-center">
+          {step === "scan" ? "Scan Your Face" : mode === "EXISTING" ? `Welcome Back, ${name}!` : "New Visitor"}
+        </h1>
         {step === "scan" && (
           <>
             <video
@@ -338,10 +340,10 @@ export default function VisitorLoginModal({
               className="w-full mt-3 rounded bg-black"
             />
 
-            <p className="text-center text-sm mt-2 font-medium text-gray-700">
+            <p className="text-center text-xl mt-2 font-medium text-gray-700">
               {faceStatus}
             </p>
-            <div className="text-center text-red-500 font-bold">
+            <div className="text-2xl text-center text-red-500 font-bold">
               Face: {faceOk ? "YES" : "NO"} | Count: {countdown}
             </div>
           </>
@@ -389,7 +391,7 @@ export default function VisitorLoginModal({
               onClick={handleSubmit}
               className="w-full bg-green-600 text-white p-2"
             >
-              Register Visitor
+              Log Visitor
             </button>
           </div>
         )}

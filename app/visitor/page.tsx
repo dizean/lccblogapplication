@@ -22,8 +22,18 @@ export default function VisitorPage() {
   const { data: logs = [], isLoading, error } = hooks.visitors();
   const visitorLogin = hooks.visitorLogin();
   const visitorLogout = hooks.visitorLogout();
-  const [savedGate, setSavedGate] = useState("");
   const [showExport, setShowExport] = useState(false);
+  const [now, setNow] = useState<Date | null>(null);
+  const [savedGate, setSavedGate] = useState<string | null>(null);
+
+  // 1. Clock effect
+  useEffect(() => {
+    setNow(new Date());
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 2. Gate validation effect
   useEffect(() => {
     const gate = localStorage.getItem("selectedGate");
 
@@ -34,6 +44,11 @@ export default function VisitorPage() {
 
     setSavedGate(gate);
   }, []);
+
+  // 3. Derived values AFTER hooks
+  const formatted = now ? formatDateTime(now) : null;
+  const date = formatted?.date ?? "";
+  const time = formatted?.time ?? "";
   const handleLogin = async (
     name: string,
     purpose: string,
@@ -73,8 +88,6 @@ export default function VisitorPage() {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
-  const { date: formattedDate, time: formattedTime } = formatDateTime(currentTime);
-
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-100 overflow-hidden">
 
@@ -91,10 +104,10 @@ export default function VisitorPage() {
               </div>
             )}
             <div className="text-sm sm:text-base md:text-lg text-gray-600 font-medium">
-              {formattedDate}
+              {date}
             </div>
             <div className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#0441B1]">
-              {formattedTime}
+              {time}
             </div>
           </div>
 
@@ -176,7 +189,7 @@ export default function VisitorPage() {
 
                         return (
                           <tr
-                            key={log.id} 
+                            key={log.id}
                             onClick={() => setSelectedLog(log)}
                             className="border-b hover:bg-gray-50 transition text-lg cursor-pointer text-left"
                           >
@@ -267,7 +280,7 @@ export default function VisitorPage() {
               ✕
             </button>
             <ExportLogsCard
-              type="visitors" 
+              type="visitors"
               service={service}
             />
           </div>
