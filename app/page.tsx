@@ -19,21 +19,32 @@ export default function Home() {
     "Galo Gate",
     "St. Monica Gate"
   ];
-  
   useEffect(() => {
-    const savedGate = localStorage.getItem("selectedGate");
+  const savedGate = localStorage.getItem("selectedGate");
 
-    if (savedGate) {
-      setSelectedGate(savedGate);
-      setShowDashboard(true);
-    }
-  }, []);
-  function handleSelectGate(gate: string) {
-    localStorage.setItem("selectedGate", gate);
-    setSelectedGate(gate);
-    setShowDashboard(true);
+  if (savedGate) {
+    window.location.href = "/visitor";
   }
+}, []);
+  // useEffect(() => {
+  //   const savedGate = localStorage.getItem("selectedGate");
 
+  //   if (savedGate) {
+  //     setSelectedGate(savedGate);
+  //     // setShowDashboard(true);
+  //     router.push("/visitor");
+  //   }
+  // }, [router]);
+  // function handleSelectGate(gate: string) {
+  //   localStorage.setItem("selectedGate", gate);
+  //   setSelectedGate(gate);
+  //   // setShowDashboard(true);
+  //   router.push("/visitor");
+  // }
+function handleSelectGate(gate: string) {
+  localStorage.setItem("selectedGate", gate);
+  window.location.href = "/visitor";
+}
   async function downloadExcel(type: "today" | "all" | "range") {
     const sheetNames = ["Employees", "Keys", "Visitors"];
 

@@ -6,7 +6,10 @@ import { formatDate, formatDateTime, formatTime } from "@/hooks/formatDateTime";
 import VisitorLoginModal from "../modals/visitorLogin";
 import { hooks } from "@/hooks/hooks";
 import DatePicker from "../component/DatePicker";
-
+import service from "@/services/services";
+import PrivacyNoticeModal from "./policy";
+import VisitDetailsModal from "./details";
+import ExportLogsCard from "../component/DownloadLogs";
 export default function VisitorPage() {
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -19,6 +22,18 @@ export default function VisitorPage() {
   const { data: logs = [], isLoading, error } = hooks.visitors();
   const visitorLogin = hooks.visitorLogin();
   const visitorLogout = hooks.visitorLogout();
+  const [savedGate, setSavedGate] = useState("");
+  const [showExport, setShowExport] = useState(false);
+  useEffect(() => {
+    const gate = localStorage.getItem("selectedGate");
+
+    if (!gate) {
+      window.location.href = "/";
+      return;
+    }
+
+    setSavedGate(gate);
+  }, []);
   const handleLogin = async (
     name: string,
     purpose: string,
@@ -52,7 +67,6 @@ export default function VisitorPage() {
     return matchesName && matchesDate;
   });
   const [currentTime, setCurrentTime] = useState(new Date());
-  const savedGate = localStorage.getItem("selectedGate");
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(new Date());
@@ -60,6 +74,7 @@ export default function VisitorPage() {
     return () => clearInterval(interval);
   }, []);
   const { date: formattedDate, time: formattedTime } = formatDateTime(currentTime);
+
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-100 overflow-hidden">
 
@@ -85,13 +100,13 @@ export default function VisitorPage() {
 
           <Link
             href="/"
+            onClick={() => localStorage.removeItem("selectedGate")}
             className="w-full md:w-auto text-center px-6 py-3 sm:px-7 sm:py-3 text-sm sm:text-lg bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-900 transition-all shadow-md"
           >
-            ← Back to Home
+            ← Change Gate
           </Link>
         </div>
       </header>
-
       <main className="flex-1 w-full overflow-hidden">
         <div className="h-full w-full flex flex-col p-2 sm:p-4 md:p-6">
           <div className="w-full flex flex-col gap-6">
@@ -111,6 +126,12 @@ export default function VisitorPage() {
                     className="w-full sm:w-[200px]"
                   />
                 )}
+                <button
+                  onClick={() => setShowExport(true)}
+                  className="w-full sm:w-[200px] px-6 py-4 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition shadow-md"
+                >
+                  Download Logs
+                </button>
                 <button
                   onClick={() => setShowAll(!showAll)}
                   className={`w-full sm:w-[200px] px-6 py-4 rounded-xl font-semibold transition shadow-md
@@ -135,59 +156,60 @@ export default function VisitorPage() {
                   Failed to load logs
                 </p>
               ) : (
-                <table className="w-full border-collapse">
-
+                <table className="w-full border-collapse text-left">
                   <thead className="sticky top-0 bg-[#0441B1] text-white text-xl z-10">
                     <tr>
-                      <th className="p-8 text-left">Name</th>
-                      <th className="p-8 text-left">Purpose</th>
-                      <th className="p-8 text-center">Date</th>
-                      <th className="p-8 text-center">Time In - Time Out</th>
-                      <th className="p-8 text-center">Action</th>
+                      <th className="p-8">Name</th>
+                      <th className="p-8">Purpose</th>
+                      <th className="p-8">Date</th>
+                      <th className="p-8">Time In - Time Out</th>
+                      <th className="p-8">Action</th>
                     </tr>
                   </thead>
 
                   <tbody>
                     {filteredLogs.length > 0 ? (
-                      filteredLogs.map((log: any, index: number) => (
-                        <tr
-                          key={index}
-                          onClick={() => setSelectedLog(log)}
-                          className="border-b hover:bg-gray-50 transition text-lg cursor-pointer"
-                        >
-                          <td className="p-5 font-semibold">{log.name}</td>
-                          <td className="p-5">{log.purpose}</td>
-                          <td className="p-5 text-center">
-                            {formatDate(log.date)}
-                          </td>
-                          <td className="p-5 text-center">
-                            {formatTime(log.logged_in)} -{" "}
-                            {log.logged_out
-                              ? formatTime(log.logged_out)
-                              : "----"}
-                          </td>
+                      filteredLogs.map((log: any) => {
+                        const safeDate = log.date ? formatDate(log.date) : "-";
+                        const timeIn = log.logged_in ? formatTime(log.logged_in) : "-";
+                        const timeOut = log.logged_out ? formatTime(log.logged_out) : "----";
 
-                          <td className="p-5 text-center">
+                        return (
+                          <tr
+                            key={log.id} 
+                            onClick={() => setSelectedLog(log)}
+                            className="border-b hover:bg-gray-50 transition text-lg cursor-pointer text-left"
+                          >
+                            <td className="p-8 font-semibold">{log.name}</td>
 
-                            {log.logged_out ? (
-                              <span className="text-green-600 font-semibold">
-                                Completed
-                              </span>
-                            ) : (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleLogout(log.id);
-                                }}
-                                className="px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition"
-                              >
-                                Log Out
-                              </button>
-                            )}
+                            <td className="p-8">{log.purpose}</td>
 
-                          </td>
-                        </tr>
-                      ))
+                            <td className="p-8">{safeDate}</td>
+
+                            <td className="p-8">
+                              {timeIn} - {timeOut}
+                            </td>
+
+                            <td className="p-8">
+                              {log.logged_out ? (
+                                <span className="text-green-600 font-semibold">
+                                  Logged Out
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleLogout(log.id);
+                                  }}
+                                  className="px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition"
+                                >
+                                  Log Out
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
                     ) : (
                       <tr>
                         <td
@@ -199,7 +221,6 @@ export default function VisitorPage() {
                       </tr>
                     )}
                   </tbody>
-
                 </table>
               )}
             </div>
@@ -207,49 +228,14 @@ export default function VisitorPage() {
         </div>
       </main>
       {showPolicy && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6 md:p-8">
-
-            <h1 className="text-xl md:text-2xl font-bold text-[#0441B1] text-center mb-4">
-              Visitor Data Privacy Notice
-            </h1>
-
-            <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-4">
-              This system captures facial images and biometric descriptors for security,
-              identity verification, and visitor logging purposes.
-            </p>
-
-            <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-4">
-              Data may be used for monitoring, auditing, and security investigations if required.
-              All data is stored securely and is not shared with unauthorized parties.
-            </p>
-
-            <p className="text-sm md:text-base font-semibold text-red-600 mb-6">
-              By continuing, you consent to the capture and processing of your facial data.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-
-              <button
-                onClick={() => {
-                  setShowPolicy(false);
-                  setShowLoginForm(true);
-                }}
-                className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition"
-              >
-                I Agree & Continue
-              </button>
-
-              <button
-                onClick={() => setShowPolicy(false)}
-                className="w-full bg-gray-500 text-white py-3 rounded-xl font-semibold hover:bg-gray-600 transition"
-              >
-                Cancel
-              </button>
-
-            </div>
-          </div>
-        </div>
+        <PrivacyNoticeModal
+          isOpen={showPolicy}
+          onAgree={() => {
+            setShowPolicy(false);
+            setShowLoginForm(true);
+          }}
+          onCancel={() => setShowPolicy(false)}
+        />
       )}
       {showLoginForm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
@@ -263,59 +249,27 @@ export default function VisitorPage() {
         </div>
       )}
       {selectedLog && (
+        <VisitDetailsModal
+          selectedLog={selectedLog}
+          setSelectedLog={setSelectedLog}
+          formatDate={formatDate}
+          formatTime={formatTime}
+          apiUrl={process.env.NEXT_PUBLIC_API_URL!}
+        />
+      )}
+      {showExport && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
-          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6 relative">
+          <div className="relative w-full max-w-4xl">
             <button
-              onClick={() => setSelectedLog(null)}
-              className="absolute top-3 right-3 text-gray-600 hover:text-black text-2xl"
+              onClick={() => setShowExport(false)}
+              className="absolute top-3 right-3 text-gray-600 hover:text-black text-2xl z-10"
             >
               ✕
             </button>
-            <h2 className="text-2xl font-bold text-[#0441B1] mb-4">
-              Visit Details
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-lg">
-              <div>
-                <p className="font-semibold">Name</p>
-                <p>{selectedLog.name}</p>
-              </div>
-              <div>
-                <p className="font-semibold">Purpose</p>
-                <p>{selectedLog.purpose}</p>
-              </div>
-              <div>
-                <p className="font-semibold">Date</p>
-                <p>{formatDate(selectedLog.date)}</p>
-              </div>
-              <div>
-                <p className="font-semibold">Time In</p>
-                <p>{formatTime(selectedLog.logged_in)}</p>
-              </div>
-              <div>
-                <p className="font-semibold">Time Out</p>
-                <p>
-                  {selectedLog.logged_out
-                    ? formatTime(selectedLog.logged_out)
-                    : "Still inside"}
-                </p>
-              </div>
-              <div>
-                <p className="font-semibold">ID Type</p>
-                <p>{selectedLog.id_type}</p>
-              </div>
-            </div>
-            <div className="mt-6">
-              <p className="font-semibold mb-2">Captured Image</p>
-              {selectedLog.img_path ? (
-                <img
-                  src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${selectedLog.img_path}`}
-                  className="w-full max-h-[400px] object-cover rounded-xl border"
-                  alt="visitor"
-                />
-              ) : (
-                <p className="text-gray-500">No image available</p>
-              )}
-            </div>
+            <ExportLogsCard
+              type="visitors" 
+              service={service}
+            />
           </div>
         </div>
       )}
